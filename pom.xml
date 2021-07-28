@@ -24,7 +24,7 @@
   </scm>
 
   <properties>
-    <project.git.project>tils-net-api</project.git.project>
+    <project.git.project>utils-net-api</project.git.project>
     <version.utils-http-client>1.0.1</version.utils-http-client>
   </properties>
 

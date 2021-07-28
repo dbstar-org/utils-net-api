@@ -1,20 +1,59 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>com.yeecloud.commons.utils</groupId>
-    <artifactId>NET</artifactId>
-    <version>1.0.0</version>
+    <groupId>io.github.dbstarll.parent</groupId>
+    <artifactId>base</artifactId>
+    <version>1.1.9</version>
   </parent>
+  <groupId>io.github.dbstarll</groupId>
   <artifactId>utils-net-api</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
+
+
+  <name>utils-net-api</name>
+  <description>utils for net api</description>
+  <url>https://github.com/dbstarll/utils-net-api</url>
+
+  <scm>
+    <connection>scm:git:${project.git.git.root}</connection>
+    <developerConnection>scm:git:${project.git.web.root}</developerConnection>
+    <url>${project.git.web.master}</url>
+    <tag>HEAD</tag>
+  </scm>
+
+  <properties>
+    <project.git.project>tils-net-api</project.git.project>
+    <version.utils-http-client>1.0.1</version.utils-http-client>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.github.dbstarll</groupId>
+        <artifactId>utils-http-client</artifactId>
+        <version>${version.utils-http-client}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>
-      <groupId>com.yeecloud.commons.utils</groupId>
+      <groupId>io.github.dbstarll</groupId>
       <artifactId>utils-http-client</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
     </dependency>
   </dependencies>
+
+  <profiles>
+    <profile>
+      <id>site-local</id>
+      <distributionManagement>
+        <site>
+          <id>local</id>
+          <url>${project.site.root.project}</url>
+        </site>
+      </distributionManagement>
+    </profile>
+  </profiles>
 </project>

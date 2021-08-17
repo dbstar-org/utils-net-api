@@ -9,7 +9,12 @@ public class ApiResponseException extends ApiProtocolException {
   private final int statusCode;
   private final String reasonPhrase;
 
-  public ApiResponseException(HttpResponseException exception) {
+  /**
+   * 构建ApiResponseException.
+   *
+   * @param exception HttpResponseException
+   */
+  public ApiResponseException(final HttpResponseException exception) {
     this(exception.getStatusCode(), exception.getReasonPhrase());
   }
 
@@ -26,11 +31,21 @@ public class ApiResponseException extends ApiProtocolException {
     this.reasonPhrase = reasonPhrase;
   }
 
-  public int getStatusCode() {
+  /**
+   * 获得异常的状态码.
+   *
+   * @return 状态码
+   */
+  public final int getStatusCode() {
     return this.statusCode;
   }
 
-  public String getReasonPhrase() {
+  /**
+   * 获得异常的原因.
+   *
+   * @return 异常原因
+   */
+  public final String getReasonPhrase() {
     return this.reasonPhrase;
   }
 }

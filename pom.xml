@@ -1,17 +1,16 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
     <groupId>io.github.dbstarll.parent</groupId>
     <artifactId>base</artifactId>
-    <version>1.1.9</version>
+    <version>1.2.0</version>
   </parent>
-  <groupId>io.github.dbstarll</groupId>
+  <groupId>io.github.dbstarll.utils</groupId>
   <artifactId>utils-net-api</artifactId>
   <version>1.0.1-SNAPSHOT</version>
 
-
-  <name>utils-net-api</name>
   <description>utils for net api</description>
   <url>https://github.com/dbstarll/utils-net-api</url>
 
@@ -24,13 +23,13 @@
 
   <properties>
     <project.git.project>utils-net-api</project.git.project>
-    <version.utils-http-client>1.0.1</version.utils-http-client>
+    <version.utils-http-client>1.0.2</version.utils-http-client>
   </properties>
 
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>io.github.dbstarll</groupId>
+        <groupId>io.github.dbstarll.utils</groupId>
         <artifactId>utils-http-client</artifactId>
         <version>${version.utils-http-client}</version>
       </dependency>
@@ -39,7 +38,7 @@
 
   <dependencies>
     <dependency>
-      <groupId>io.github.dbstarll</groupId>
+      <groupId>io.github.dbstarll.utils</groupId>
       <artifactId>utils-http-client</artifactId>
     </dependency>
   </dependencies>

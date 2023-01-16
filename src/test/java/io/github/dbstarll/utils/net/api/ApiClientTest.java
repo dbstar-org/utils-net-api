@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 /**
  * test ApiClient
  */
-public class ApiClientTest {
+class ApiClientTest {
     private MockWebServer server;
 
     @BeforeEach

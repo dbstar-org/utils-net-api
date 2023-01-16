@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.github.dbstarll.parent</groupId>
     <artifactId>base</artifactId>
-    <version>1.2.0</version>
+    <version>1.2.9</version>
   </parent>
   <groupId>io.github.dbstarll.utils</groupId>
   <artifactId>utils-net-api</artifactId>
@@ -22,7 +22,7 @@
 
   <properties>
     <project.git.project>utils-net-api</project.git.project>
-    <version.utils-http-client>1.0.2</version.utils-http-client>
+    <version.utils-http-client>1.0.3</version.utils-http-client>
   </properties>
 
   <dependencyManagement>
@@ -51,7 +51,7 @@
         </file>
       </activation>
       <properties>
-        <version.mockwebserver>4.9.1</version.mockwebserver>
+        <version.mockwebserver>4.9.3</version.mockwebserver>
       </properties>
       <dependencyManagement>
         <dependencies>

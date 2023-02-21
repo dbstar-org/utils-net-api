@@ -19,6 +19,14 @@ import java.nio.charset.StandardCharsets;
 import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class ApiClient {
+    private static final String HTTP_CLIENT_IS_NULL_EX_MESSAGE = "httpClient is null";
+    private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
+    private static final String URI_RESOLVER_IS_NULL_EX_MESSAGE = "uriResolver is null";
+    private static final String CHARSET_IS_NULL_EX_MESSAGE = "charset is null";
+    private static final String URI_IS_NULL_EX_MESSAGE = "uri is null";
+    private static final String REQUEST_IS_NULL_EX_MESSAGE = "request is null";
+    private static final String RESPONSE_HANDLER_IS_NULL_EX_MESSAGE = "responseHandler is null";
+
     private final HttpClient httpClient;
 
     private ResponseHandlerFactory responseHandlerFactory = new BasicResponseHandlerFactory();
@@ -26,23 +34,23 @@ public abstract class ApiClient {
     private Charset charset = StandardCharsets.UTF_8;
 
     protected ApiClient(final HttpClient httpClient) {
-        this.httpClient = notNull(httpClient, "httpClient is null");
+        this.httpClient = notNull(httpClient, HTTP_CLIENT_IS_NULL_EX_MESSAGE);
     }
 
     protected final void setResponseHandlerFactory(final ResponseHandlerFactory responseHandlerFactory) {
-        this.responseHandlerFactory = notNull(responseHandlerFactory, "responseHandlerFactory is null");
+        this.responseHandlerFactory = notNull(responseHandlerFactory, RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE);
     }
 
     protected final void setUriResolver(final UriResolver uriResolver) {
-        this.uriResolver = notNull(uriResolver, "uriResolver is null");
+        this.uriResolver = notNull(uriResolver, URI_RESOLVER_IS_NULL_EX_MESSAGE);
     }
 
     protected final void setCharset(final Charset charset) {
-        this.charset = notNull(charset, "charset is null");
+        this.charset = notNull(charset, CHARSET_IS_NULL_EX_MESSAGE);
     }
 
     protected final RequestBuilder get(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.get(notNull(uri, "uri is null")));
+        return preProcessing(RequestBuilder.get(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
     }
 
     protected final RequestBuilder get(final String path) throws ApiException {
@@ -50,7 +58,7 @@ public abstract class ApiClient {
     }
 
     protected final RequestBuilder post(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.post(notNull(uri, "uri is null")));
+        return preProcessing(RequestBuilder.post(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
     }
 
     protected final RequestBuilder post(final String path) throws ApiException {
@@ -58,7 +66,7 @@ public abstract class ApiClient {
     }
 
     protected final RequestBuilder delete(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.delete(notNull(uri, "uri is null")));
+        return preProcessing(RequestBuilder.delete(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
     }
 
     protected final RequestBuilder delete(final String path) throws ApiException {
@@ -92,8 +100,8 @@ public abstract class ApiClient {
             throws IOException, ApiException {
         try {
             return postProcessing(
-                    httpClient.execute(notNull(request, "request is null"),
-                            notNull(responseHandler, "responseHandler is null")));
+                    httpClient.execute(notNull(request, REQUEST_IS_NULL_EX_MESSAGE),
+                            notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE)));
         } catch (HttpResponseException ex) {
             throw new ApiResponseException(ex);
         } catch (ClientProtocolException ex) {

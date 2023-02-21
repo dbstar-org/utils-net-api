@@ -86,27 +86,30 @@ public abstract class ApiClient {
     /**
      * 在获取请求结果之后，对结果进行包装.
      *
+     * @param request       the request to execute
      * @param executeResult 请求结果
      * @param <T>           请求结果类型
      * @return 请求结果
      * @throws ApiException api处理异常
      */
-    protected <T> T postProcessing(final T executeResult) throws ApiException {
+    protected <T> T postProcessing(final HttpUriRequest request, final T executeResult) throws ApiException {
         return executeResult;
     }
 
     protected final <T> T execute(final HttpUriRequest request, final ResponseHandler<T> responseHandler)
             throws IOException, ApiException {
         try {
-            return postProcessing(
-                    httpClient.execute(notNull(request, REQUEST_IS_NULL_EX_MESSAGE),
-                            notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE)));
+            notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
+            notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE);
+        } catch (NullPointerException ex) {
+            throw new ApiParameterException(ex);
+        }
+        try {
+            return postProcessing(request, httpClient.execute(request, responseHandler));
         } catch (HttpResponseException ex) {
             throw new ApiResponseException(ex);
         } catch (ClientProtocolException ex) {
             throw new ApiProtocolException(ex);
-        } catch (NullPointerException ex) {
-            throw new ApiParameterException(ex);
         } catch (IOException | ApiException ex) {
             throw ex;
         } catch (Exception ex) {

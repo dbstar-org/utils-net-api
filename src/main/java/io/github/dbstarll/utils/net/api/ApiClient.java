@@ -23,7 +23,6 @@ public abstract class ApiClient {
     private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
     private static final String URI_RESOLVER_IS_NULL_EX_MESSAGE = "uriResolver is null";
     private static final String CHARSET_IS_NULL_EX_MESSAGE = "charset is null";
-    private static final String URI_IS_NULL_EX_MESSAGE = "uri is null";
     private static final String REQUEST_IS_NULL_EX_MESSAGE = "request is null";
     private static final String RESPONSE_HANDLER_IS_NULL_EX_MESSAGE = "responseHandler is null";
 
@@ -50,7 +49,7 @@ public abstract class ApiClient {
     }
 
     protected final RequestBuilder get(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.get(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
+        return preProcessing(RequestBuilder.get(uri));
     }
 
     protected final RequestBuilder get(final String path) throws ApiException {
@@ -58,7 +57,7 @@ public abstract class ApiClient {
     }
 
     protected final RequestBuilder post(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.post(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
+        return preProcessing(RequestBuilder.post(uri));
     }
 
     protected final RequestBuilder post(final String path) throws ApiException {
@@ -66,7 +65,7 @@ public abstract class ApiClient {
     }
 
     protected final RequestBuilder delete(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.delete(notNull(uri, URI_IS_NULL_EX_MESSAGE)));
+        return preProcessing(RequestBuilder.delete(uri));
     }
 
     protected final RequestBuilder delete(final String path) throws ApiException {

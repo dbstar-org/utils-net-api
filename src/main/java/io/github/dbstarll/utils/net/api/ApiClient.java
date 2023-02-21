@@ -79,6 +79,7 @@ public abstract class ApiClient {
      * @return RequestBuilder
      * @throws ApiException api处理异常
      */
+    @SuppressWarnings("RedundantThrows")
     protected RequestBuilder preProcessing(final RequestBuilder builder) throws ApiException {
         return builder.addHeader("Connection", "close").setCharset(charset);
     }
@@ -92,6 +93,7 @@ public abstract class ApiClient {
      * @return 请求结果
      * @throws ApiException api处理异常
      */
+    @SuppressWarnings("RedundantThrows")
     protected <T> T postProcessing(final HttpUriRequest request, final T executeResult) throws ApiException {
         return executeResult;
     }

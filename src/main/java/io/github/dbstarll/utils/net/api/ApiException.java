@@ -20,16 +20,6 @@ public class ApiException extends Exception {
     /**
      * 构建ApiException.
      *
-     * @param message the detail message. The detail message is saved for
-     *                later retrieval by the {@link #getMessage()} method.
-     */
-    public ApiException(final String message) {
-        super(message);
-    }
-
-    /**
-     * 构建ApiException.
-     *
      * @param cause the cause (which is saved for later retrieval by the
      *              {@link #getCause()} method).  (A <tt>null</tt> value is
      *              permitted, and indicates that the cause is nonexistent or

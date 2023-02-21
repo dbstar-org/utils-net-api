@@ -6,16 +6,6 @@ public class ApiProtocolException extends ApiException {
     /**
      * 构建ApiProtocolException.
      *
-     * @param message the detail message. The detail message is saved for
-     *                later retrieval by the {@link #getMessage()} method.
-     */
-    public ApiProtocolException(final String message) {
-        super(message);
-    }
-
-    /**
-     * 构建ApiProtocolException.
-     *
      * @param cause the cause (which is saved for later retrieval by the
      *              {@link #getCause()} method).  (A <tt>null</tt> value is
      *              permitted, and indicates that the cause is nonexistent or

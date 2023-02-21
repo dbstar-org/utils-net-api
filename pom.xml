@@ -23,7 +23,7 @@
 
   <properties>
     <project.git.project>utils-net-api</project.git.project>
-    <version.utils-http-client>1.0.4-SNAPSHOT</version.utils-http-client>
+    <version.utils-http-client>1.0.5</version.utils-http-client>
   </properties>
 
   <dependencyManagement>

@@ -25,10 +25,17 @@ public class ApiResponseException extends ApiProtocolException {
    * @param reasonPhrase 错误原因
    */
   public ApiResponseException(final int statusCode, final String reasonPhrase) {
-    super(String.format("status code: %d" + (StringUtils.isBlank(reasonPhrase) ? "" : ", reason phrase: %s"),
-            statusCode, reasonPhrase));
+    super(formatMessage(statusCode, reasonPhrase));
     this.statusCode = statusCode;
     this.reasonPhrase = reasonPhrase;
+  }
+
+  private static String formatMessage(final int statusCode, final String reasonPhrase) {
+    if (StringUtils.isBlank(reasonPhrase)) {
+      return String.format("status code: %d", statusCode);
+    } else {
+      return String.format("status code: %d, reason phrase: %s", statusCode, reasonPhrase);
+    }
   }
 
   /**

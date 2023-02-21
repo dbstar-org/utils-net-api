@@ -14,6 +14,7 @@ import org.apache.http.client.methods.RequestBuilder;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -22,7 +23,7 @@ public abstract class ApiClient {
 
     private ResponseHandlerFactory responseHandlerFactory = new BasicResponseHandlerFactory();
     private UriResolver uriResolver = new AbsoluteUriResolver();
-    private Charset charset = Charset.forName("UTF-8");
+    private Charset charset = StandardCharsets.UTF_8;
 
     protected ApiClient(final HttpClient httpClient) {
         this.httpClient = notNull(httpClient, "httpClient is null");
@@ -99,11 +100,9 @@ public abstract class ApiClient {
             throw new ApiProtocolException(ex);
         } catch (NullPointerException ex) {
             throw new ApiParameterException(ex);
-        } catch (IOException ex) {
+        } catch (IOException | ApiException ex) {
             throw ex;
-        } catch (ApiException ex) {
-            throw ex;
-        } catch (Throwable ex) {
+        } catch (Exception ex) {
             throw new ApiException(ex);
         }
     }

@@ -4,12 +4,16 @@ import io.github.dbstarll.utils.http.client.request.AbsoluteUriResolver;
 import io.github.dbstarll.utils.http.client.request.UriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpEntityEnclosingRequest;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.methods.RequestBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class ApiClient {
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
     private static final String HTTP_CLIENT_IS_NULL_EX_MESSAGE = "httpClient is null";
     private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
     private static final String URI_RESOLVER_IS_NULL_EX_MESSAGE = "uriResolver is null";
@@ -95,6 +101,11 @@ public abstract class ApiClient {
      */
     @SuppressWarnings("RedundantThrows")
     protected <T> T postProcessing(final HttpUriRequest request, final T executeResult) throws ApiException {
+        if (executeResult != null) {
+            logger.trace("response: [{}] with {}:[{}]", request, executeResult.getClass().getName(), executeResult);
+        } else {
+            logger.trace("response: [{}] with null", request);
+        }
         return executeResult;
     }
 
@@ -106,6 +117,14 @@ public abstract class ApiClient {
         } catch (NullPointerException ex) {
             throw new ApiParameterException(ex);
         }
+
+        if (request instanceof HttpEntityEnclosingRequest) {
+            final HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+            logger.trace("request: [{}] with {}:{}", request, entity.getClass().getName(), entity);
+        } else {
+            logger.trace("request: [{}]", request);
+        }
+
         try {
             return postProcessing(request, httpClient.execute(request, responseHandler));
         } catch (HttpResponseException ex) {

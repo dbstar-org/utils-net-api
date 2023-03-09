@@ -102,9 +102,10 @@ public abstract class ApiClient {
     @SuppressWarnings("RedundantThrows")
     protected <T> T postProcessing(final HttpUriRequest request, final T executeResult) throws ApiException {
         if (executeResult != null) {
-            logger.trace("response: [{}] with {}:[{}]", request, executeResult.getClass().getName(), executeResult);
+            logger.trace("response: [{}]@{} with {}:[{}]", request, request.hashCode(),
+                    executeResult.getClass().getName(), executeResult);
         } else {
-            logger.trace("response: [{}] with null", request);
+            logger.trace("response: [{}]@{} with null", request, request.hashCode());
         }
         return executeResult;
     }
@@ -120,9 +121,10 @@ public abstract class ApiClient {
 
         if (request instanceof HttpEntityEnclosingRequest) {
             final HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
-            logger.trace("request: [{}] with {}:{}", request, entity.getClass().getName(), entity);
+            logger.trace("request: [{}]@{} with {}:{}", request, request.hashCode(),
+                    entity.getClass().getName(), entity);
         } else {
-            logger.trace("request: [{}]", request);
+            logger.trace("request: [{}]@{}", request, request.hashCode());
         }
 
         try {

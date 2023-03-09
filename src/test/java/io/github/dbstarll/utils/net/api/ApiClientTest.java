@@ -10,7 +10,9 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.HttpResponseException;
+import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.AbstractResponseHandler;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -23,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
@@ -66,9 +69,35 @@ class ApiClientTest {
     }
 
     @Test
+    void getNull() throws Throwable {
+        useClient((server, client) -> {
+            final HttpUriRequest request = client.get("/ping.html").build();
+            assertNull(client.execute(request, Float.class));
+            assertEquals(1, server.getRequestCount());
+            final RecordedRequest recorded = server.takeRequest();
+            assertEquals("GET", recorded.getMethod());
+            assertEquals("/ping.html", recorded.getPath());
+        });
+    }
+
+    @Test
     void post() throws Throwable {
         useClient((server, client) -> {
             final HttpUriRequest request = client.post("/ping.html").build();
+            assertEquals("ok", client.execute(request, String.class));
+            assertEquals(1, server.getRequestCount());
+            final RecordedRequest recorded = server.takeRequest();
+            assertEquals("POST", recorded.getMethod());
+            assertEquals("/ping.html", recorded.getPath());
+        });
+    }
+
+    @Test
+    void postJson() throws Throwable {
+        useClient((server, client) -> {
+            final HttpEntity entity = EntityBuilder.create().setText("{}")
+                    .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
+            final HttpUriRequest request = client.post("/ping.html").setEntity(entity).build();
             assertEquals("ok", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -180,6 +209,7 @@ class ApiClientTest {
             addResponseHandler(Boolean.class, response -> {
                 throw new UnsupportedOperationException("Unsupported");
             });
+            addResponseHandler(Float.class, response -> null);
         }
     }
 }

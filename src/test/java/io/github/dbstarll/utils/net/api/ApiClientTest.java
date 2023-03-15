@@ -6,16 +6,17 @@ import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.entity.EntityBuilder;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.entity.ContentType;
-import org.apache.http.impl.client.AbstractResponseHandler;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.apache.hc.client5.http.HttpResponseException;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.entity.EntityBuilder;
+import org.apache.hc.client5.http.impl.classic.AbstractHttpClientResponseHandler;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
@@ -59,7 +60,7 @@ class ApiClientTest {
     @Test
     void get() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             assertEquals("ok", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -71,7 +72,7 @@ class ApiClientTest {
     @Test
     void getNull() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             assertNull(client.execute(request, Float.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -83,7 +84,7 @@ class ApiClientTest {
     @Test
     void post() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.post("/ping.html").build();
+            final ClassicHttpRequest request = client.post("/ping.html").build();
             assertEquals("ok", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -97,7 +98,7 @@ class ApiClientTest {
         useClient((server, client) -> {
             final HttpEntity entity = EntityBuilder.create().setText("{}")
                     .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
-            final HttpUriRequest request = client.post("/ping.html").setEntity(entity).build();
+            final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
             assertEquals("ok", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -109,7 +110,7 @@ class ApiClientTest {
     @Test
     void delete() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.delete("/ping.html").build();
+            final ClassicHttpRequest request = client.delete("/ping.html").build();
             assertEquals("ok", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
@@ -121,7 +122,7 @@ class ApiClientTest {
     @Test
     void socketTimeoutException() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             assertEquals("ok", client.execute(request, String.class));
 
             final IOException e = assertThrows(IOException.class, () -> client.execute(request, String.class));
@@ -134,7 +135,7 @@ class ApiClientTest {
     @Test
     void apiParameterException() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             final Exception e = assertThrowsExactly(ApiParameterException.class, () -> client.execute(request, Integer.class));
             assertNotNull(e.getCause());
             assertEquals(NullPointerException.class, e.getCause().getClass());
@@ -146,7 +147,7 @@ class ApiClientTest {
     @Test
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             assertEquals("ok", client.execute(request, String.class));
 
             final ApiResponseException e = assertThrowsExactly(ApiResponseException.class, () -> client.execute(request, String.class));
@@ -163,7 +164,7 @@ class ApiClientTest {
     @Test
     void apiProtocolException() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             final ApiProtocolException e = assertThrowsExactly(ApiProtocolException.class, () -> client.execute(request, Long.class));
             assertNotNull(e.getCause());
             assertEquals(ClientProtocolException.class, e.getCause().getClass());
@@ -175,7 +176,7 @@ class ApiClientTest {
     @Test
     void apiException() throws Throwable {
         useClient((server, client) -> {
-            final HttpUriRequest request = client.get("/ping.html").build();
+            final ClassicHttpRequest request = client.get("/ping.html").build();
             final Exception e = assertThrowsExactly(ApiException.class, () -> client.execute(request, Boolean.class));
             assertNotNull(e.getCause());
             assertEquals(UnsupportedOperationException.class, e.getCause().getClass());
@@ -195,10 +196,15 @@ class ApiClientTest {
 
     private static class MyResponseHandlerFactory extends BasicResponseHandlerFactory {
         public MyResponseHandlerFactory() {
-            addResponseHandler(Long.class, new AbstractResponseHandler<Long>() {
+            addResponseHandler(Long.class, new AbstractHttpClientResponseHandler<Long>() {
                 @Override
                 public Long handleEntity(HttpEntity entity) throws IOException {
-                    final String value = EntityUtils.toString(entity);
+                    final String value;
+                    try {
+                        value = EntityUtils.toString(entity);
+                    } catch (final ParseException ex) {
+                        throw new ClientProtocolException(ex);
+                    }
                     try {
                         return Long.parseLong(value);
                     } catch (NumberFormatException e) {

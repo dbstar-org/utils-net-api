@@ -4,14 +4,13 @@ import io.github.dbstarll.utils.http.client.request.AbsoluteUriResolver;
 import io.github.dbstarll.utils.http.client.request.UriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpEntityEnclosingRequest;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.HttpResponseException;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.methods.RequestBuilder;
+import org.apache.hc.client5.http.ClientProtocolException;
+import org.apache.hc.client5.http.HttpResponseException;
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,39 +53,39 @@ public abstract class ApiClient {
         this.charset = notNull(charset, CHARSET_IS_NULL_EX_MESSAGE);
     }
 
-    protected final RequestBuilder get(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.get(uri));
+    protected final ClassicRequestBuilder get(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.get(uri));
     }
 
-    protected final RequestBuilder get(final String path) throws ApiException {
+    protected final ClassicRequestBuilder get(final String path) throws ApiException {
         return get(uriResolver.resolve(path));
     }
 
-    protected final RequestBuilder post(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.post(uri));
+    protected final ClassicRequestBuilder post(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.post(uri));
     }
 
-    protected final RequestBuilder post(final String path) throws ApiException {
+    protected final ClassicRequestBuilder post(final String path) throws ApiException {
         return post(uriResolver.resolve(path));
     }
 
-    protected final RequestBuilder delete(final URI uri) throws ApiException {
-        return preProcessing(RequestBuilder.delete(uri));
+    protected final ClassicRequestBuilder delete(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.delete(uri));
     }
 
-    protected final RequestBuilder delete(final String path) throws ApiException {
+    protected final ClassicRequestBuilder delete(final String path) throws ApiException {
         return delete(uriResolver.resolve(path));
     }
 
     /**
      * 在发出请求之前，预处理请求参数.
      *
-     * @param builder RequestBuilder
-     * @return RequestBuilder
+     * @param builder ClassicRequestBuilder
+     * @return ClassicRequestBuilder
      * @throws ApiException api处理异常
      */
     @SuppressWarnings("RedundantThrows")
-    protected RequestBuilder preProcessing(final RequestBuilder builder) throws ApiException {
+    protected ClassicRequestBuilder preProcessing(final ClassicRequestBuilder builder) throws ApiException {
         return builder.addHeader("Connection", "close").setCharset(charset);
     }
 
@@ -100,7 +99,7 @@ public abstract class ApiClient {
      * @throws ApiException api处理异常
      */
     @SuppressWarnings("RedundantThrows")
-    protected <T> T postProcessing(final HttpUriRequest request, final T executeResult) throws ApiException {
+    protected <T> T postProcessing(final ClassicHttpRequest request, final T executeResult) throws ApiException {
         if (executeResult != null) {
             logger.trace("response: [{}]@{} with {}:[{}]", request, request.hashCode(),
                     executeResult.getClass().getName(), executeResult);
@@ -110,7 +109,7 @@ public abstract class ApiClient {
         return executeResult;
     }
 
-    protected final <T> T execute(final HttpUriRequest request, final ResponseHandler<T> responseHandler)
+    protected final <T> T execute(final ClassicHttpRequest request, final HttpClientResponseHandler<T> responseHandler)
             throws IOException, ApiException {
         try {
             notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
@@ -119,8 +118,8 @@ public abstract class ApiClient {
             throw new ApiParameterException(ex);
         }
 
-        if (request instanceof HttpEntityEnclosingRequest) {
-            final HttpEntity entity = ((HttpEntityEnclosingRequest) request).getEntity();
+        if (request.getEntity() != null) {
+            final HttpEntity entity = request.getEntity();
             logger.trace("request: [{}]@{} with {}:{}", request, request.hashCode(),
                     entity.getClass().getName(), entity);
         } else {
@@ -140,7 +139,7 @@ public abstract class ApiClient {
         }
     }
 
-    protected final <T> T execute(final HttpUriRequest request, final Class<T> responseClass)
+    protected final <T> T execute(final ClassicHttpRequest request, final Class<T> responseClass)
             throws IOException, ApiException {
         return execute(request, responseHandlerFactory.getResponseHandler(responseClass));
     }

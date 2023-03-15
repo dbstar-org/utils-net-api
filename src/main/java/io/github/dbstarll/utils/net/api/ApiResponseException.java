@@ -1,6 +1,7 @@
 package io.github.dbstarll.utils.net.api;
 
-import org.apache.http.client.HttpResponseException;
+
+import org.apache.hc.client5.http.HttpResponseException;
 
 public class ApiResponseException extends ApiProtocolException {
     private static final long serialVersionUID = 7892913062028304357L;

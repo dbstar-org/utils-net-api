@@ -72,12 +72,8 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient, ClassicHtt
 
     protected final <T> T execute(final ClassicHttpRequest request, final HttpClientResponseHandler<T> responseHandler)
             throws IOException, ApiException {
-        try {
-            notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
-            notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE);
-        } catch (NullPointerException ex) {
-            throw new ApiParameterException(ex);
-        }
+        notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
+        notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE);
 
         if (request.getEntity() != null) {
             final HttpEntity entity = request.getEntity();
@@ -102,6 +98,7 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient, ClassicHtt
 
     protected final <T> T execute(final ClassicHttpRequest request, final Class<T> responseClass)
             throws IOException, ApiException {
+        notNull(responseClass, "responseClass is null");
         return execute(request, responseHandlerFactory.getResponseHandler(responseClass));
     }
 }

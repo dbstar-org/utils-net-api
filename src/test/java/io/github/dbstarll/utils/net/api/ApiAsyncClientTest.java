@@ -25,6 +25,8 @@ import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -67,9 +69,9 @@ class ApiAsyncClientTest {
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final Future<String> future = client.execute(client.get("/ping.html"), String.class, callback);
             assertEquals("ok", future.get());
-            assertEquals("ok", callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertEquals("ok", callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
@@ -82,9 +84,9 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final MyFutureCallback<Float> callback = new MyFutureCallback<>();
             assertNull(client.execute(client.get("/ping.html"), Float.class, callback).get());
-            assertNull(callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertNull(callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
@@ -97,9 +99,9 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             assertEquals("ok", client.execute(client.post("/ping.html"), String.class, callback).get());
-            assertEquals("ok", callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertEquals("ok", callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -113,9 +115,9 @@ class ApiAsyncClientTest {
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             assertEquals("ok", client.execute(client.post("/ping.html")
                     .setEntity("{}", ContentType.APPLICATION_JSON), String.class, callback).get());
-            assertEquals("ok", callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertEquals("ok", callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -128,9 +130,9 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             assertEquals("ok", client.execute(client.delete("/ping.html"), String.class, callback).get());
-            assertEquals("ok", callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertEquals("ok", callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("DELETE", recorded.getMethod());
@@ -144,17 +146,17 @@ class ApiAsyncClientTest {
             final AsyncRequestBuilder request = client.get("/ping.html");
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             assertEquals("ok", client.execute(request, String.class, callback).get());
-            assertEquals("ok", callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertEquals("ok", callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
 
             final MyFutureCallback<String> callback2 = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback2).get());
             assertEquals(SocketTimeoutException.class, e.getCause().getClass());
             assertEquals(2, server.getRequestCount());
-            assertNull(callback2.result);
-            assertSame(e.getCause(), callback2.ex);
-            assertFalse(callback2.cancelled);
+            assertNull(callback2.result.get());
+            assertSame(e.getCause(), callback2.ex.get());
+            assertFalse(callback2.cancelled.get());
         });
     }
 
@@ -164,9 +166,9 @@ class ApiAsyncClientTest {
             final MyFutureCallback<Integer> callback = new MyFutureCallback<>();
             final NullPointerException e = assertThrowsExactly(NullPointerException.class, () -> client.execute(client.get("/ping.html"), Integer.class, callback).get());
             assertEquals("responseHandler is null", e.getMessage());
-            assertNull(callback.result);
-            assertNull(callback.ex);
-            assertFalse(callback.cancelled);
+            assertNull(callback.result.get());
+            assertNull(callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(0, server.getRequestCount());
         });
     }
@@ -185,9 +187,9 @@ class ApiAsyncClientTest {
             assertEquals("Not Found", e2.getReasonPhrase());
             assertEquals("status code: 404, reason phrase: Not Found", e2.getMessage());
             assertNull(e2.getCause());
-            assertNull(callback.result);
-            assertSame(e2, callback.ex);
-            assertFalse(callback.cancelled);
+            assertNull(callback.result.get());
+            assertSame(e2, callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(2, server.getRequestCount());
         }, s -> s.enqueue(new MockResponse().setResponseCode(404)));
     }
@@ -200,9 +202,9 @@ class ApiAsyncClientTest {
             assertNotNull(e.getCause());
             assertEquals(ClientProtocolException.class, e.getCause().getClass());
             assertEquals("not a Long value: ok", e.getCause().getMessage());
-            assertNull(callback.result);
-            assertSame(e.getCause(), callback.ex);
-            assertFalse(callback.cancelled);
+            assertNull(callback.result.get());
+            assertSame(e.getCause(), callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
         });
     }
@@ -215,9 +217,9 @@ class ApiAsyncClientTest {
             assertNotNull(e.getCause());
             assertEquals(UnsupportedOperationException.class, e.getCause().getClass());
             assertEquals("Unsupported", e.getCause().getMessage());
-            assertNull(callback.result);
-            assertSame(e.getCause(), callback.ex);
-            assertFalse(callback.cancelled);
+            assertNull(callback.result.get());
+            assertSame(e.getCause(), callback.ex.get());
+            assertFalse(callback.cancelled.get());
             assertEquals(1, server.getRequestCount());
         });
     }
@@ -257,23 +259,23 @@ class ApiAsyncClientTest {
     }
 
     private static class MyFutureCallback<T> implements FutureCallback<T> {
-        private volatile T result;
-        private volatile Exception ex;
-        private volatile boolean cancelled;
+        private final AtomicReference<T> result = new AtomicReference<>();
+        private final AtomicReference<Exception> ex = new AtomicReference<>();
+        private final AtomicBoolean cancelled = new AtomicBoolean();
 
         @Override
         public void completed(T result) {
-            this.result = result;
+            this.result.set(result);
         }
 
         @Override
         public void failed(Exception ex) {
-            this.ex = ex;
+            this.ex.set(ex);
         }
 
         @Override
         public void cancelled() {
-            this.cancelled = true;
+            this.cancelled.set(true);
         }
     }
 }

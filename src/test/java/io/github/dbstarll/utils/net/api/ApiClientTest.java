@@ -133,13 +133,11 @@ class ApiClientTest {
     }
 
     @Test
-    void apiParameterException() throws Throwable {
+    void nullPointerException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            final Exception e = assertThrowsExactly(ApiParameterException.class, () -> client.execute(request, Integer.class));
-            assertNotNull(e.getCause());
-            assertEquals(NullPointerException.class, e.getCause().getClass());
-            assertEquals("responseHandler is null", e.getCause().getMessage());
+            final NullPointerException e = assertThrowsExactly(NullPointerException.class, () -> client.execute(request, Integer.class));
+            assertEquals("responseHandler is null", e.getMessage());
             assertEquals(0, server.getRequestCount());
         });
     }

@@ -1,45 +1,27 @@
 package io.github.dbstarll.utils.net.api;
 
-import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
-import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
 import org.apache.hc.client5.http.async.HttpAsyncClient;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpResponse;
-import org.apache.hc.core5.http.Message;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
-import org.apache.hc.core5.http.io.support.ClassicResponseBuilder;
-import org.apache.hc.core5.http.nio.AsyncEntityConsumer;
+import org.apache.hc.core5.http.nio.AsyncEntityProducer;
 import org.apache.hc.core5.http.nio.AsyncRequestProducer;
 import org.apache.hc.core5.http.nio.AsyncResponseConsumer;
-import org.apache.hc.core5.http.nio.entity.StringAsyncEntityConsumer;
 import org.apache.hc.core5.http.nio.support.AsyncRequestBuilder;
-import org.apache.hc.core5.http.nio.support.BasicResponseConsumer;
 
-import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class ApiAsyncClient extends
         AbstractApiClient<HttpAsyncClient, AsyncRequestProducer, AsyncRequestBuilder> {
-    private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
-    private static final String REQUEST_PRODUCER_IS_NULL_EX_MESSAGE = "requestProducer is null";
+    private static final String REQUEST_BUILDER_IS_NULL_EX_MESSAGE = "requestBuilder is null";
     private static final String RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE = "responseConsumer is null";
-
-    private ResponseHandlerFactory responseHandlerFactory = new BasicResponseHandlerFactory();
+    private static final String ENTITY_FORMAT
+            = "[Content-Length: %s, Content-Type: %s, Content-Encoding: %s, chunked: %s]";
 
     protected ApiAsyncClient(final HttpAsyncClient httpClient) {
         super(httpClient);
-    }
-
-    protected final void setResponseHandlerFactory(final ResponseHandlerFactory responseHandlerFactory) {
-        this.responseHandlerFactory = notNull(responseHandlerFactory, RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE);
     }
 
     @Override
@@ -57,122 +39,38 @@ public abstract class ApiAsyncClient extends
         return AsyncRequestBuilder.delete(uri);
     }
 
-    protected final <T> Future<T> execute(final AsyncRequestProducer requestProducer,
+    protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,
                                           final AsyncResponseConsumer<T> responseConsumer,
-                                          final FutureCallback<T> callback) throws ApiException {
-        try {
-            notNull(requestProducer, REQUEST_PRODUCER_IS_NULL_EX_MESSAGE);
-            notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
-        } catch (NullPointerException ex) {
-            throw new ApiParameterException(ex);
-        }
+                                          final FutureCallback<T> callback) {
+        notNull(requestBuilder, REQUEST_BUILDER_IS_NULL_EX_MESSAGE);
+        notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
 
-//        if (requestProducer.getEntity() != null) {
-//            final HttpEntity entity = requestProducer.getEntity();
-//            logger.trace("request: [{}]@{} with {}:{}", requestProducer, requestProducer.hashCode(),
-//                    entity.getClass().getName(), entity);
-//        } else {
-        logger.trace("request: [{}]@{}", requestProducer, requestProducer.hashCode());
-//        }
-
-        try {
-            return httpClient.execute(requestProducer, responseConsumer, null, null, callback);
-        } catch (Exception ex) {
-            throw new ApiException(ex);
+        if (requestBuilder.getEntity() != null) {
+            final AsyncEntityProducer entity = requestBuilder.getEntity();
+            final String entityString = String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
+                    entity.getContentEncoding(), entity.isChunked());
+            logger.trace("request: [{} {}]@{} with {}:{}", requestBuilder.getMethod(), requestBuilder.getUri(),
+                    requestBuilder.hashCode(), entity.getClass().getName(), entityString);
+        } else {
+            logger.trace("request: [{} {}]@{}", requestBuilder.getMethod(), requestBuilder.getUri(),
+                    requestBuilder.hashCode());
         }
+// response: [POST http://localhost:62052/ping.html]@402695541 with java.lang.String:[ok]
+
+        return httpClient.execute(requestBuilder.build(), responseConsumer, null, null, callback);
     }
 
-    protected final <T> Future<Message<HttpResponse, T>> execute(
-            final AsyncRequestProducer requestProducer, final AsyncEntityConsumer<T> dataConsumer,
-            final FutureCallback<Message<HttpResponse, T>> callback) throws ApiException {
-        return execute(requestProducer, new BasicResponseConsumer<>(dataConsumer), callback);
-    }
-
-    protected final <T> Future<T> execute(final AsyncRequestProducer requestProducer,
+    protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,
                                           final HttpClientResponseHandler<T> responseHandler,
-                                          final FutureCallback<T> callback) throws ApiException {
+                                          final FutureCallback<T> callback) {
         notNull(responseHandler, "responseHandler is null");
-        final Future<Message<HttpResponse, String>> future = execute(requestProducer, new StringAsyncEntityConsumer(),
-                new FutureCallback<Message<HttpResponse, String>>() {
-                    @Override
-                    public void completed(final Message<HttpResponse, String> result) {
-                        if (callback != null) {
-                            final T res;
-                            try {
-                                res = parse(result, responseHandler);
-                            } catch (IOException | HttpException e) {
-                                failed(e);
-                                return;
-                            }
-                            callback.completed(res);
-                        }
-                    }
-
-                    @Override
-                    public void failed(final Exception ex) {
-                        if (callback != null) {
-                            callback.failed(ex);
-                        }
-                    }
-
-                    @Override
-                    public void cancelled() {
-                        if (callback != null) {
-                            callback.cancelled();
-                        }
-                    }
-                });
-        return new Future<T>() {
-            @Override
-            public boolean cancel(final boolean mayInterruptIfRunning) {
-                return future.cancel(mayInterruptIfRunning);
-            }
-
-            @Override
-            public boolean isCancelled() {
-                return future.isCancelled();
-            }
-
-            @Override
-            public boolean isDone() {
-                return future.isDone();
-            }
-
-            @Override
-            public T get() throws InterruptedException, ExecutionException {
-                try {
-                    return parse(future.get(), responseHandler);
-                } catch (IOException | HttpException e) {
-                    throw new ExecutionException(e);
-                }
-            }
-
-            @Override
-            public T get(final long timeout, final TimeUnit unit) throws InterruptedException, ExecutionException,
-                    TimeoutException {
-                try {
-                    return parse(future.get(timeout, unit), responseHandler);
-                } catch (IOException | HttpException e) {
-                    throw new ExecutionException(e);
-                }
-            }
-        };
+        return execute(requestBuilder, ResponseHandlerResponseConsumer.create(responseHandler), callback);
     }
 
-    protected final <T> Future<T> execute(final AsyncRequestProducer requestProducer, final Class<T> responseClass,
-                                          final FutureCallback<T> callback) throws ApiException {
+    protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,
+                                          final Class<T> responseClass,
+                                          final FutureCallback<T> callback) {
         notNull(responseClass, "responseClass is null");
-        return execute(requestProducer, responseHandlerFactory.getResponseHandler(responseClass), callback);
-    }
-
-    private <T> T parse(final Message<HttpResponse, String> message, final HttpClientResponseHandler<T> responseHandler)
-            throws IOException, HttpException {
-        final HttpResponse response = message.getHead();
-        System.out.println(Arrays.toString(response.getHeaders()));
-        final ClassicResponseBuilder builder = ClassicResponseBuilder.create(response.getCode())
-                .setVersion(response.getVersion())
-                .setHeaders(response.getHeaders())
-                .setEntity(message.getBody());
-        return responseHandler.handleResponse(builder.build());
+        return execute(requestBuilder, getResponseHandler(responseClass), callback);
     }
 }

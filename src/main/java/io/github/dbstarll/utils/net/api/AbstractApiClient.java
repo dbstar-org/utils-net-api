@@ -2,6 +2,9 @@ package io.github.dbstarll.utils.net.api;
 
 import io.github.dbstarll.utils.http.client.request.AbsoluteUriResolver;
 import io.github.dbstarll.utils.http.client.request.UriResolver;
+import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
+import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.support.AbstractRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,6 +19,7 @@ public abstract class AbstractApiClient<C, R, B extends AbstractRequestBuilder<R
     private static final String HTTP_CLIENT_IS_NULL_EX_MESSAGE = "httpClient is null";
     private static final String URI_RESOLVER_IS_NULL_EX_MESSAGE = "uriResolver is null";
     private static final String CHARSET_IS_NULL_EX_MESSAGE = "charset is null";
+    private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -23,6 +27,7 @@ public abstract class AbstractApiClient<C, R, B extends AbstractRequestBuilder<R
 
     private UriResolver uriResolver = new AbsoluteUriResolver();
     private Charset charset = StandardCharsets.UTF_8;
+    private ResponseHandlerFactory responseHandlerFactory = new BasicResponseHandlerFactory();
 
     protected AbstractApiClient(final C httpClient) {
         this.httpClient = notNull(httpClient, HTTP_CLIENT_IS_NULL_EX_MESSAGE);
@@ -34,6 +39,14 @@ public abstract class AbstractApiClient<C, R, B extends AbstractRequestBuilder<R
 
     protected final void setCharset(final Charset charset) {
         this.charset = notNull(charset, CHARSET_IS_NULL_EX_MESSAGE);
+    }
+
+    protected final void setResponseHandlerFactory(final ResponseHandlerFactory responseHandlerFactory) {
+        this.responseHandlerFactory = notNull(responseHandlerFactory, RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE);
+    }
+
+    protected final <T> HttpClientResponseHandler<T> getResponseHandler(final Class<T> responseClass) {
+        return responseHandlerFactory.getResponseHandler(responseClass);
     }
 
     protected final B get(final URI uri) throws ApiException {

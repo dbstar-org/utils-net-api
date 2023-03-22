@@ -9,6 +9,7 @@ import org.apache.hc.core5.http.nio.AsyncResponseConsumer;
 import org.apache.hc.core5.http.nio.support.AsyncRequestBuilder;
 
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import static org.apache.commons.lang3.Validate.notNull;
@@ -70,6 +71,21 @@ public abstract class ApiAsyncClient extends
     protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,
                                           final Class<T> responseClass,
                                           final FutureCallback<T> callback) {
+        notNull(responseClass, "responseClass is null");
+        return execute(requestBuilder, getResponseHandler(responseClass), callback);
+    }
+
+    protected final <T> Future<List<T>> execute(final AsyncRequestBuilder requestBuilder,
+                                                final HttpClientResponseHandler<T> responseHandler,
+                                                final StreamFutureCallback<T> callback) {
+        notNull(responseHandler, "responseHandler is null");
+        return execute(requestBuilder, StreamResponseHandlerResponseConsumer.create(responseHandler, callback),
+                callback);
+    }
+
+    protected final <T> Future<List<T>> execute(final AsyncRequestBuilder requestBuilder,
+                                                final Class<T> responseClass,
+                                                final StreamFutureCallback<T> callback) {
         notNull(responseClass, "responseClass is null");
         return execute(requestBuilder, getResponseHandler(responseClass), callback);
     }

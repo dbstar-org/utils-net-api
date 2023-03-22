@@ -23,6 +23,7 @@ import org.junit.jupiter.api.function.ThrowingConsumer;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
@@ -159,7 +160,7 @@ class ApiAsyncClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final AsyncRequestBuilder request = client.get("/ping.html");
-            assertEquals("ok", client.execute(request, String.class, null).get());
+            assertEquals("ok", client.execute(request, String.class, (FutureCallback<String>) null).get());
 
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
@@ -197,6 +198,16 @@ class ApiAsyncClientTest {
             assertEquals("Unsupported", e.getCause().getMessage());
             callback.assertException(e.getCause());
             assertEquals(1, server.getRequestCount());
+        });
+    }
+
+    @Test
+    void stream() throws Throwable {
+        useClient((server, client) -> {
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final Future<List<String>> future = client.execute(client.get("https://httpbin.y1cloud.com/stream/3"), String.class, callback);
+            assertEquals(3, future.get().size());
+//            callback.assertResult("ok");
         });
     }
 
@@ -290,6 +301,13 @@ class ApiAsyncClientTest {
                     }
                 }
             }
+        }
+    }
+
+    private static class MyStreamFutureCallback<T> extends MyFutureCallback<List<T>> implements StreamFutureCallback<T> {
+        @Override
+        public void stream(T result) {
+            System.out.println("stream: " + result);
         }
     }
 }

@@ -6,17 +6,21 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.support.ClassicResponseBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class ResponseHandlerResponseConsumer<T> extends AbstractCharResponseConsumer<T> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ResponseHandlerResponseConsumer.class);
+
     private final HttpClientResponseHandler<T> responseHandler;
 
-    private final AtomicReference<StringBuilder> stringBuilder = new AtomicReference<>();
-    private final AtomicReference<ClassicResponseBuilder> classicResponseBuilder = new AtomicReference<>();
-    private final AtomicReference<ContentType> contentType = new AtomicReference<>();
+    private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
+    private final AtomicReference<ClassicResponseBuilder> refClassicResponseBuilder = new AtomicReference<>();
+    private final AtomicReference<ContentType> refContentType = new AtomicReference<>();
 
     static <T> ResponseHandlerResponseConsumer<T> create(final HttpClientResponseHandler<T> responseHandler) {
         return new ResponseHandlerResponseConsumer<>(responseHandler);
@@ -27,23 +31,22 @@ final class ResponseHandlerResponseConsumer<T> extends AbstractCharResponseConsu
     }
 
     @Override
-    protected void start(final HttpResponse response, final ContentType type) {
-        this.stringBuilder.set(new StringBuilder());
-        this.classicResponseBuilder.set(ClassicResponseBuilder.create(response.getCode())
+    protected void start(final HttpResponse response, final ContentType contentType) {
+        this.refStringBuilder.set(new StringBuilder());
+        this.refClassicResponseBuilder.set(ClassicResponseBuilder.create(response.getCode())
                 .setVersion(response.getVersion())
                 .setHeaders(response.getHeaders()));
-        this.contentType.set(type);
+        this.refContentType.set(contentType);
     }
 
     @Override
     protected T buildResult() throws IOException {
         try {
-            return responseHandler.handleResponse(classicResponseBuilder.get()
-                    .setEntity(stringBuilder.get().toString(), contentType.get())
+            return responseHandler.handleResponse(refClassicResponseBuilder.get()
+                    .setEntity(refStringBuilder.get().toString(), refContentType.get())
                     .build());
         } catch (HttpException e) {
-            failed(e);
-            return null;
+            throw new IOException(e);
         }
     }
 
@@ -54,11 +57,14 @@ final class ResponseHandlerResponseConsumer<T> extends AbstractCharResponseConsu
 
     @Override
     protected void data(final CharBuffer src, final boolean endOfStream) {
-        stringBuilder.get().append(src);
+        LOGGER.trace("data: {}, endOfStream: {}", src.remaining(), endOfStream);
+        refStringBuilder.get().append(src);
     }
 
     @Override
     public void releaseResources() {
-        // do nothing
+        this.refStringBuilder.set(null);
+        this.refClassicResponseBuilder.set(null);
+        this.refContentType.set(null);
     }
 }

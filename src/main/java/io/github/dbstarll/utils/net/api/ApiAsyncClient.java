@@ -10,7 +10,6 @@ import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
-import org.apache.hc.core5.http.nio.AsyncEntityProducer;
 import org.apache.hc.core5.http.nio.AsyncRequestProducer;
 import org.apache.hc.core5.http.nio.AsyncResponseConsumer;
 import org.apache.hc.core5.http.nio.entity.AsyncEntityProducers;
@@ -31,24 +30,25 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         super(httpClient);
     }
 
+    private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {
+        traceRequest(request);
+
+        final HttpEntity entity = request.getEntity();
+        if (entity != null) {
+            final byte[] data = IOUtils.readFully(entity.getContent(), (int) entity.getContentLength());
+            final ContentType contentType = ContentType.parse(entity.getContentType());
+            return new BasicRequestProducer(request, AsyncEntityProducers.create(data, contentType));
+        } else {
+            return new BasicRequestProducer(request, null);
+        }
+    }
+
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final AsyncResponseConsumer<T> responseConsumer,
                                           final FutureCallback<T> callback) throws IOException {
         notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
 
-        traceRequest(request);
-
-        final AsyncEntityProducer dataProducer;
-        final HttpEntity entity = request.getEntity();
-        if (entity != null) {
-            final byte[] data = IOUtils.readFully(entity.getContent(), (int) entity.getContentLength());
-            dataProducer = AsyncEntityProducers.create(data, ContentType.parse(entity.getContentType()));
-        } else {
-            dataProducer = null;
-        }
-        final AsyncRequestProducer requestProducer = new BasicRequestProducer(request, dataProducer);
-
-        return httpClient.execute(requestProducer, new AsyncResponseConsumerWrapper<T>(responseConsumer) {
+        return httpClient.execute(buildRequestProducer(request), new AsyncResponseConsumerWrapper<T>(responseConsumer) {
             @Override
             public void consumeResponse(final HttpResponse response, final EntityDetails entityDetails,
                                         final HttpContext context, final FutureCallback<T> resultCallback)

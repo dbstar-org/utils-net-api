@@ -8,32 +8,40 @@ import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
 import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.HttpResponseException;
-import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.async.HttpAsyncClient;
 import org.apache.hc.client5.http.entity.EntityBuilder;
+import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.classic.AbstractHttpClientResponseHandler;
-import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 
 /**
- * test ApiClient
+ * test ApiAsyncClient
  */
-class ApiClientTest {
+class ApiAsyncClientTest {
     @SafeVarargs
     private final void useServer(final ThrowingConsumer<MockWebServer> consumer,
                                  final ThrowingConsumer<MockWebServer>... customizers) throws Throwable {
@@ -51,7 +59,8 @@ class ApiClientTest {
     private final void useClient(final ThrowingBiConsumer<MockWebServer, MyClient> consumer,
                                  final ThrowingConsumer<MockWebServer>... customizers) throws Throwable {
         useServer(server -> {
-            try (CloseableHttpClient client = new HttpClientFactory().build()) {
+            try (CloseableHttpAsyncClient client = new HttpClientFactory().setAutomaticRetries(false).buildAsync()) {
+                client.start();
                 consumer.accept(server, new MyClient(client, server.url("/").toString()));
             }
         }, customizers);
@@ -61,7 +70,10 @@ class ApiClientTest {
     void get() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            final Future<String> future = client.execute(request, String.class, callback);
+            assertEquals("ok", future.get());
+            callback.assertResult("ok");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
@@ -73,7 +85,9 @@ class ApiClientTest {
     void getNull() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertNull(client.execute(request, Float.class));
+            final MyFutureCallback<Float> callback = new MyFutureCallback<>();
+            assertNull(client.execute(request, Float.class, callback).get());
+            callback.assertResult(null);
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
@@ -85,7 +99,9 @@ class ApiClientTest {
     void post() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.post("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            assertEquals("ok", client.execute(request, String.class, callback).get());
+            callback.assertResult("ok");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -99,9 +115,12 @@ class ApiClientTest {
             final HttpEntity entity = EntityBuilder.create().setText("{}")
                     .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
             final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
-            assertEquals("ok", client.execute(request, String.class));
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            assertEquals("ok", client.execute(request, String.class, callback).get());
+            callback.assertResult("ok");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
+            assertEquals("{}", recorded.getBody().readUtf8());
             assertEquals("POST", recorded.getMethod());
             assertEquals("/ping.html", recorded.getPath());
         });
@@ -111,7 +130,9 @@ class ApiClientTest {
     void delete() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.delete("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            assertEquals("ok", client.execute(request, String.class, callback).get());
+            callback.assertResult("ok");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("DELETE", recorded.getMethod());
@@ -123,12 +144,15 @@ class ApiClientTest {
     void socketTimeoutException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            assertEquals("ok", client.execute(request, String.class, callback).get());
+            callback.assertResult("ok");
 
-            final IOException e = assertThrows(IOException.class, () -> client.execute(request, String.class));
-            assertEquals(SocketTimeoutException.class, e.getClass());
-            assertEquals("Read timed out", e.getMessage());
+            final MyFutureCallback<String> callback2 = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback2).get());
+            assertEquals(SocketTimeoutException.class, e.getCause().getClass());
             assertEquals(2, server.getRequestCount());
+            callback2.assertException(e.getCause());
         });
     }
 
@@ -136,8 +160,10 @@ class ApiClientTest {
     void nullPointerException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            final NullPointerException e = assertThrowsExactly(NullPointerException.class, () -> client.execute(request, Integer.class));
+            final MyFutureCallback<Integer> callback = new MyFutureCallback<>();
+            final NullPointerException e = assertThrowsExactly(NullPointerException.class, () -> client.execute(request, Integer.class, callback).get());
             assertEquals("responseHandler is null", e.getMessage());
+            assertFalse(callback.called);
             assertEquals(0, server.getRequestCount());
         });
     }
@@ -146,15 +172,17 @@ class ApiClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("ok", client.execute(request, String.class, (FutureCallback<String>) null).get());
 
-            final ApiResponseException e = assertThrowsExactly(ApiResponseException.class, () -> client.execute(request, String.class));
-            assertEquals(404, e.getStatusCode());
-            assertEquals("Client Error", e.getReasonPhrase());
-            assertEquals("status code: 404, reason phrase: Client Error", e.getMessage());
-            assertNotNull(e.getCause());
-            assertEquals(HttpResponseException.class, e.getCause().getClass());
-            assertEquals("status code: 404, reason phrase: Client Error", e.getCause().getMessage());
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
+            assertSame(HttpResponseException.class, e.getCause().getClass());
+            final HttpResponseException e2 = (HttpResponseException) e.getCause();
+            assertEquals(404, e2.getStatusCode());
+            assertEquals("Not Found", e2.getReasonPhrase());
+            assertEquals("status code: 404, reason phrase: Not Found", e2.getMessage());
+            assertNull(e2.getCause());
+            callback.assertException(e2);
             assertEquals(2, server.getRequestCount());
         }, s -> s.enqueue(new MockResponse().setResponseCode(404)));
     }
@@ -163,10 +191,12 @@ class ApiClientTest {
     void apiProtocolException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            final ApiProtocolException e = assertThrowsExactly(ApiProtocolException.class, () -> client.execute(request, Long.class));
+            final MyFutureCallback<Long> callback = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, Long.class, callback).get());
             assertNotNull(e.getCause());
             assertEquals(ClientProtocolException.class, e.getCause().getClass());
             assertEquals("not a Long value: ok", e.getCause().getMessage());
+            callback.assertException(e.getCause());
             assertEquals(1, server.getRequestCount());
         });
     }
@@ -175,16 +205,46 @@ class ApiClientTest {
     void apiException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            final Exception e = assertThrowsExactly(ApiException.class, () -> client.execute(request, Boolean.class));
+            final MyFutureCallback<Boolean> callback = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, Boolean.class, callback).get());
             assertNotNull(e.getCause());
             assertEquals(UnsupportedOperationException.class, e.getCause().getClass());
             assertEquals("Unsupported", e.getCause().getMessage());
+            callback.assertException(e.getCause());
             assertEquals(1, server.getRequestCount());
         });
     }
 
-    private static class MyClient extends ApiClient {
-        public MyClient(final HttpClient httpClient, final String uriBase) {
+    @Test
+    void httpException() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final MyFutureCallback<BigInteger> callback = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, BigInteger.class, callback).get());
+            assertNotNull(e.getCause());
+            assertEquals(IOException.class, e.getCause().getClass());
+            assertNotNull(e.getCause().getCause());
+            assertEquals(HttpException.class, e.getCause().getCause().getClass());
+            assertEquals("test throw HttpException", e.getCause().getCause().getMessage());
+            callback.assertException(e.getCause());
+            assertEquals(1, server.getRequestCount());
+        });
+    }
+
+    @Test
+    void stream() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("https://httpbin.y1cloud.com/stream/3").build();
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final Future<List<String>> future = client.execute(request, String.class, callback);
+            assertEquals(3, future.get().size());
+            callback.assertResult(future.get());
+            assertEquals(callback.results, future.get());
+        });
+    }
+
+    private static class MyClient extends ApiAsyncClient {
+        public MyClient(final HttpAsyncClient httpClient, final String uriBase) {
             super(httpClient);
             setUriResolver(new RelativeUriResolver(uriBase));
             setCharset(StandardCharsets.UTF_8);
@@ -214,6 +274,77 @@ class ApiClientTest {
                 throw new UnsupportedOperationException("Unsupported");
             });
             addResponseHandler(Float.class, response -> null);
+            addResponseHandler(BigInteger.class, response -> {
+                throw new HttpException("test throw HttpException");
+            });
+        }
+    }
+
+    private static class MyFutureCallback<T> implements FutureCallback<T> {
+        private final Object lock = new Object();
+
+        private volatile boolean called;
+
+        private volatile T result;
+        private volatile Exception ex;
+        private volatile boolean cancelled;
+
+        @Override
+        public void completed(T result) {
+            this.result = result;
+            synchronized (lock) {
+                this.called = true;
+                lock.notify();
+            }
+        }
+
+        @Override
+        public void failed(Exception ex) {
+            this.ex = ex;
+            synchronized (lock) {
+                this.called = true;
+                lock.notify();
+            }
+        }
+
+        @Override
+        public void cancelled() {
+            this.cancelled = true;
+            synchronized (lock) {
+                this.called = true;
+                lock.notify();
+            }
+        }
+
+        public void assertResult(T result) {
+            waitCall();
+            assertEquals(result, this.result);
+        }
+
+        public void assertException(Throwable ex) {
+            waitCall();
+            assertSame(ex, this.ex);
+        }
+
+        private void waitCall() {
+            while (!called) {
+                synchronized (lock) {
+                    try {
+                        lock.wait(100);
+                    } catch (InterruptedException e) {
+                        // ignore
+                    }
+                }
+            }
+        }
+    }
+
+    private static class MyStreamFutureCallback<T> extends MyFutureCallback<List<T>> implements StreamFutureCallback<T> {
+        private final List<T> results = new ArrayList<>();
+
+        @Override
+        public void stream(T result) {
+            results.add(result);
         }
     }
 }

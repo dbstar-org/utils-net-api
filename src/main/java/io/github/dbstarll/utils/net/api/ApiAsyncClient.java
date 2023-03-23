@@ -55,7 +55,8 @@ public abstract class ApiAsyncClient extends
                 requestBuilder.hashCode());
 
         if (requestBuilder.getEntity() != null) {
-            logger.trace("request: {} with {}", traceRequest, format(requestBuilder.getEntity()));
+            final String traceEntity = format(requestBuilder.getEntity());
+            logger.trace("request: {} with {}", traceRequest, traceEntity);
         } else {
             logger.trace("request: {}", traceRequest);
         }
@@ -65,7 +66,8 @@ public abstract class ApiAsyncClient extends
             public void consumeResponse(final HttpResponse response, final EntityDetails entityDetails,
                                         final HttpContext context, final FutureCallback<T> resultCallback)
                     throws HttpException, IOException {
-                logger.trace("response: {} with {}", traceRequest, format(entityDetails));
+                final String traceEntity = format(entityDetails);
+                logger.trace("response: {} with {}", traceRequest, traceEntity);
                 super.consumeResponse(response, entityDetails, context, resultCallback);
             }
 

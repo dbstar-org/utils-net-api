@@ -14,6 +14,7 @@ import org.apache.hc.client5.http.impl.classic.AbstractHttpClientResponseHandler
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.nio.support.AsyncRequestBuilder;
@@ -21,8 +22,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -202,12 +205,28 @@ class ApiAsyncClientTest {
     }
 
     @Test
+    void httpException() throws Throwable {
+        useClient((server, client) -> {
+            final MyFutureCallback<BigInteger> callback = new MyFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(client.get("/ping.html"), BigInteger.class, callback).get());
+            assertNotNull(e.getCause());
+            assertEquals(IOException.class, e.getCause().getClass());
+            assertNotNull(e.getCause().getCause());
+            assertEquals(HttpException.class, e.getCause().getCause().getClass());
+            assertEquals("test throw HttpException", e.getCause().getCause().getMessage());
+            callback.assertException(e.getCause());
+            assertEquals(1, server.getRequestCount());
+        });
+    }
+
+    @Test
     void stream() throws Throwable {
         useClient((server, client) -> {
             final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
             final Future<List<String>> future = client.execute(client.get("https://httpbin.y1cloud.com/stream/3"), String.class, callback);
             assertEquals(3, future.get().size());
-//            callback.assertResult("ok");
+            callback.assertResult(future.get());
+            assertEquals(callback.results, future.get());
         });
     }
 
@@ -242,6 +261,9 @@ class ApiAsyncClientTest {
                 throw new UnsupportedOperationException("Unsupported");
             });
             addResponseHandler(Float.class, response -> null);
+            addResponseHandler(BigInteger.class, response -> {
+                throw new HttpException("test throw HttpException");
+            });
         }
     }
 
@@ -305,9 +327,11 @@ class ApiAsyncClientTest {
     }
 
     private static class MyStreamFutureCallback<T> extends MyFutureCallback<List<T>> implements StreamFutureCallback<T> {
+        private final List<T> results = new ArrayList<>();
+
         @Override
         public void stream(T result) {
-            System.out.println("stream: " + result);
+            results.add(result);
         }
     }
 }

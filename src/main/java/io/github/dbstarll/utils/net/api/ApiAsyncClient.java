@@ -78,12 +78,8 @@ public abstract class ApiAsyncClient extends
     }
 
     private String format(final EntityDetails entity) {
-        if (entity == null) {
-            return null;
-        } else {
-            return String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
-                    entity.getContentEncoding(), entity.isChunked());
-        }
+        return String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
+                entity.getContentEncoding(), entity.isChunked());
     }
 
     protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,

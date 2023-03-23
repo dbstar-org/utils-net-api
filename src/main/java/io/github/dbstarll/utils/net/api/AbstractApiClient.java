@@ -5,6 +5,7 @@ import io.github.dbstarll.utils.http.client.request.UriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
 import org.apache.hc.core5.http.ClassicHttpRequest;
+import org.apache.hc.core5.http.EntityDetails;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.slf4j.Logger;
@@ -22,6 +23,7 @@ public abstract class AbstractApiClient<C> {
     private static final String CHARSET_IS_NULL_EX_MESSAGE = "charset is null";
     private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
     private static final String REQUEST_IS_NULL_EX_MESSAGE = "request is null";
+    private static final String ENTITY_FORMAT = "[Length: %s, Type: %s, Encoding: %s, chunked: %s]";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -90,9 +92,15 @@ public abstract class AbstractApiClient<C> {
         notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
 
         if (request.getEntity() != null) {
-            logger.trace("request: [{}]@{} with {}", request, request.hashCode(), request.getEntity());
+            final String traceEntity = format(request.getEntity());
+            logger.trace("request: [{}]@{} with {}", request, request.hashCode(), traceEntity);
         } else {
             logger.trace("request: [{}]@{}", request, request.hashCode());
         }
+    }
+
+    protected final String format(final EntityDetails entity) {
+        return String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
+                entity.getContentEncoding(), entity.isChunked());
     }
 }

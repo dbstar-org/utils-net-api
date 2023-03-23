@@ -26,8 +26,6 @@ import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> {
     private static final String RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE = "responseConsumer is null";
-    private static final String ENTITY_FORMAT
-            = "[Content-Length: %s, Content-Type: %s, Content-Encoding: %s, chunked: %s]";
 
     protected ApiAsyncClient(final HttpAsyncClient httpClient) {
         super(httpClient);
@@ -66,11 +64,6 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
                 super.consume(src);
             }
         }, null, null, callback);
-    }
-
-    private String format(final EntityDetails entity) {
-        return String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
-                entity.getContentEncoding(), entity.isChunked());
     }
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,

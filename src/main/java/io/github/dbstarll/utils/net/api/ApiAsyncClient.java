@@ -2,13 +2,18 @@ package io.github.dbstarll.utils.net.api;
 
 import org.apache.hc.client5.http.async.HttpAsyncClient;
 import org.apache.hc.core5.concurrent.FutureCallback;
+import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
-import org.apache.hc.core5.http.nio.AsyncEntityProducer;
 import org.apache.hc.core5.http.nio.AsyncRequestProducer;
 import org.apache.hc.core5.http.nio.AsyncResponseConsumer;
 import org.apache.hc.core5.http.nio.support.AsyncRequestBuilder;
+import org.apache.hc.core5.http.protocol.HttpContext;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -46,19 +51,39 @@ public abstract class ApiAsyncClient extends
         notNull(requestBuilder, REQUEST_BUILDER_IS_NULL_EX_MESSAGE);
         notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
 
-        if (requestBuilder.getEntity() != null) {
-            final AsyncEntityProducer entity = requestBuilder.getEntity();
-            final String entityString = String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
-                    entity.getContentEncoding(), entity.isChunked());
-            logger.trace("request: [{} {}]@{} with {}:{}", requestBuilder.getMethod(), requestBuilder.getUri(),
-                    requestBuilder.hashCode(), entity.getClass().getName(), entityString);
-        } else {
-            logger.trace("request: [{} {}]@{}", requestBuilder.getMethod(), requestBuilder.getUri(),
-                    requestBuilder.hashCode());
-        }
-// response: [POST http://localhost:62052/ping.html]@402695541 with java.lang.String:[ok]
+        final String traceRequest = String.format("[%s %s]@%s", requestBuilder.getMethod(), requestBuilder.getUri(),
+                requestBuilder.hashCode());
 
-        return httpClient.execute(requestBuilder.build(), responseConsumer, null, null, callback);
+        if (requestBuilder.getEntity() != null) {
+            logger.trace("request: {} with {}", traceRequest, format(requestBuilder.getEntity()));
+        } else {
+            logger.trace("request: {}", traceRequest);
+        }
+
+        return httpClient.execute(requestBuilder.build(), new AsyncResponseConsumerWrapper<T>(responseConsumer) {
+            @Override
+            public void consumeResponse(final HttpResponse response, final EntityDetails entityDetails,
+                                        final HttpContext context, final FutureCallback<T> resultCallback)
+                    throws HttpException, IOException {
+                logger.trace("response: {} with {}", traceRequest, format(entityDetails));
+                super.consumeResponse(response, entityDetails, context, resultCallback);
+            }
+
+            @Override
+            public void consume(final ByteBuffer src) throws IOException {
+                logger.trace("consume: {} with {} bytes", traceRequest, src.remaining());
+                super.consume(src);
+            }
+        }, null, null, callback);
+    }
+
+    private String format(final EntityDetails entity) {
+        if (entity == null) {
+            return null;
+        } else {
+            return String.format(ENTITY_FORMAT, entity.getContentLength(), entity.getContentType(),
+                    entity.getContentEncoding(), entity.isChunked());
+        }
     }
 
     protected final <T> Future<T> execute(final AsyncRequestBuilder requestBuilder,
@@ -79,14 +104,16 @@ public abstract class ApiAsyncClient extends
                                                 final HttpClientResponseHandler<T> responseHandler,
                                                 final StreamFutureCallback<T> callback) {
         notNull(responseHandler, "responseHandler is null");
-        return execute(requestBuilder, StreamResponseHandlerResponseConsumer.create(responseHandler, callback),
-                callback);
+        notNull(callback, "callback is null");
+        return execute(requestBuilder,
+                StreamResponseHandlerResponseConsumer.create(responseHandler, callback), callback);
     }
 
     protected final <T> Future<List<T>> execute(final AsyncRequestBuilder requestBuilder,
                                                 final Class<T> responseClass,
                                                 final StreamFutureCallback<T> callback) {
         notNull(responseClass, "responseClass is null");
+        notNull(callback, "callback is null");
         return execute(requestBuilder, getResponseHandler(responseClass), callback);
     }
 }

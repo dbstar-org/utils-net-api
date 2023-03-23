@@ -42,7 +42,7 @@ public abstract class AbstractResponseHandlerResponseConsumer<H, T> extends Abst
     }
 
     @Override
-    protected final int capacityIncrement() {
+    protected int capacityIncrement() {
         return 0;
     }
 

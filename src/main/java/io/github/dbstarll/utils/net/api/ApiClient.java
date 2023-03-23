@@ -4,19 +4,15 @@ import org.apache.hc.client5.http.ClientProtocolException;
 import org.apache.hc.client5.http.HttpResponseException;
 import org.apache.hc.client5.http.classic.HttpClient;
 import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
-public abstract class ApiClient extends AbstractApiClient<HttpClient, ClassicHttpRequest, ClassicRequestBuilder> {
-    private static final String REQUEST_IS_NULL_EX_MESSAGE = "request is null";
+public abstract class ApiClient extends AbstractApiClient<HttpClient> {
     private static final String RESPONSE_HANDLER_IS_NULL_EX_MESSAGE = "responseHandler is null";
-
 
     protected ApiClient(final HttpClient httpClient) {
         super(httpClient);
@@ -25,21 +21,6 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient, ClassicHtt
     @Override
     protected ClassicRequestBuilder preProcessing(final ClassicRequestBuilder builder) throws ApiException {
         return super.preProcessing(builder).addHeader("Connection", "close");
-    }
-
-    @Override
-    protected ClassicRequestBuilder builderGet(final URI uri) {
-        return ClassicRequestBuilder.get(uri);
-    }
-
-    @Override
-    protected ClassicRequestBuilder builderPost(final URI uri) {
-        return ClassicRequestBuilder.post(uri);
-    }
-
-    @Override
-    protected ClassicRequestBuilder builderDelete(final URI uri) {
-        return ClassicRequestBuilder.delete(uri);
     }
 
     /**
@@ -64,16 +45,9 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient, ClassicHtt
 
     protected final <T> T execute(final ClassicHttpRequest request, final HttpClientResponseHandler<T> responseHandler)
             throws IOException, ApiException {
-        notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
         notNull(responseHandler, RESPONSE_HANDLER_IS_NULL_EX_MESSAGE);
 
-        if (request.getEntity() != null) {
-            final HttpEntity entity = request.getEntity();
-            logger.trace("request: [{}]@{} with {}:{}", request, request.hashCode(),
-                    entity.getClass().getName(), entity);
-        } else {
-            logger.trace("request: [{}]@{}", request, request.hashCode());
-        }
+        traceRequest(request);
 
         try {
             return postProcessing(request, httpClient.execute(request, responseHandler));

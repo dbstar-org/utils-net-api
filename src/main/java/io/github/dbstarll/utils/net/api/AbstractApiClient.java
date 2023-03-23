@@ -4,8 +4,9 @@ import io.github.dbstarll.utils.http.client.request.AbsoluteUriResolver;
 import io.github.dbstarll.utils.http.client.request.UriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
+import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
-import org.apache.hc.core5.http.support.AbstractRequestBuilder;
+import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,11 +16,12 @@ import java.nio.charset.StandardCharsets;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
-public abstract class AbstractApiClient<C, R, B extends AbstractRequestBuilder<R>> {
+public abstract class AbstractApiClient<C> {
     private static final String HTTP_CLIENT_IS_NULL_EX_MESSAGE = "httpClient is null";
     private static final String URI_RESOLVER_IS_NULL_EX_MESSAGE = "uriResolver is null";
     private static final String CHARSET_IS_NULL_EX_MESSAGE = "charset is null";
     private static final String RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE = "responseHandlerFactory is null";
+    private static final String REQUEST_IS_NULL_EX_MESSAGE = "request is null";
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -49,45 +51,48 @@ public abstract class AbstractApiClient<C, R, B extends AbstractRequestBuilder<R
         return responseHandlerFactory.getResponseHandler(responseClass);
     }
 
-    protected final B get(final URI uri) throws ApiException {
-        return preProcessing(builderGet(uri));
+    protected final ClassicRequestBuilder get(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.get(uri));
     }
 
-    protected final B get(final String path) throws ApiException {
+    protected final ClassicRequestBuilder get(final String path) throws ApiException {
         return get(uriResolver.resolve(path));
     }
 
-    protected final B post(final URI uri) throws ApiException {
-        return preProcessing(builderPost(uri));
+    protected final ClassicRequestBuilder post(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.post(uri));
     }
 
-    protected final B post(final String path) throws ApiException {
+    protected final ClassicRequestBuilder post(final String path) throws ApiException {
         return post(uriResolver.resolve(path));
     }
 
-    protected final B delete(final URI uri) throws ApiException {
-        return preProcessing(builderDelete(uri));
+    protected final ClassicRequestBuilder delete(final URI uri) throws ApiException {
+        return preProcessing(ClassicRequestBuilder.delete(uri));
     }
 
-    protected final B delete(final String path) throws ApiException {
+    protected final ClassicRequestBuilder delete(final String path) throws ApiException {
         return delete(uriResolver.resolve(path));
     }
-
-    protected abstract B builderGet(URI uri);
-
-    protected abstract B builderPost(URI uri);
-
-    protected abstract B builderDelete(URI uri);
 
     /**
      * 在发出请求之前，预处理请求参数.
      *
-     * @param builder AbstractRequestBuilder
-     * @return AbstractRequestBuilder
+     * @param builder ClassicRequestBuilder
+     * @return ClassicRequestBuilder
      * @throws ApiException api处理异常
      */
-    @SuppressWarnings("unchecked")
-    protected B preProcessing(final B builder) throws ApiException {
-        return (B) builder.setCharset(charset);
+    protected ClassicRequestBuilder preProcessing(final ClassicRequestBuilder builder) throws ApiException {
+        return builder.setCharset(charset);
+    }
+
+    protected final void traceRequest(final ClassicHttpRequest request) {
+        notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
+
+        if (request.getEntity() != null) {
+            logger.trace("request: [{}]@{} with {}", request, request.hashCode(), request.getEntity());
+        } else {
+            logger.trace("request: [{}]@{}", request, request.hashCode());
+        }
     }
 }

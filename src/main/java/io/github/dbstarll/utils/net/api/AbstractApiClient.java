@@ -105,7 +105,7 @@ public abstract class AbstractApiClient<C> {
                 } catch (ParseException e) {
                     throw new ApiProtocolException(e);
                 }
-                logger.trace("request: [{}]@{} with {}:{}:{}", request, request.hashCode(),
+                logger.trace("request: [{}]@{} with {}:{}:[{}]", request, request.hashCode(),
                         request.getEntity().getClass().getSimpleName(), traceEntity, content);
             } else {
                 logger.trace("request: [{}]@{} with {}:{}", request, request.hashCode(),

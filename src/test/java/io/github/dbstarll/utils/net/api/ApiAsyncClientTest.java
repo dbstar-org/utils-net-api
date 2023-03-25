@@ -3,6 +3,8 @@ package io.github.dbstarll.utils.net.api;
 import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
+import io.github.dbstarll.utils.net.api.index.StringIndex;
+import io.github.dbstarll.utils.net.api.index.StringIndexResponseHandler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -172,7 +174,7 @@ class ApiAsyncClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class, (FutureCallback<String>) null).get());
+            assertEquals("ok", client.execute(request, String.class, null).get());
 
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
@@ -236,7 +238,7 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("https://httpbin.y1cloud.com/stream/3").build();
             final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
-            final Future<List<String>> future = client.execute(request, String.class, callback);
+            final Future<List<String>> future = client.execute(request, StringIndex.class, callback);
             assertEquals(3, future.get().size());
             callback.assertResult(future.get());
             assertEquals(callback.results, future.get());
@@ -277,6 +279,7 @@ class ApiAsyncClientTest {
             addResponseHandler(BigInteger.class, response -> {
                 throw new HttpException("test throw HttpException");
             });
+            addResponseHandler(StringIndex.class, new StringIndexResponseHandler());
         }
     }
 

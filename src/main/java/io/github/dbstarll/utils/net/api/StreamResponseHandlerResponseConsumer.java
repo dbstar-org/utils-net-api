@@ -1,22 +1,33 @@
 package io.github.dbstarll.utils.net.api;
 
-import org.apache.commons.lang3.StringUtils;
+import io.github.dbstarll.utils.net.api.index.Index;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
-final class StreamResponseHandlerResponseConsumer<T> extends AbstractResponseHandlerResponseConsumer<T, List<T>> {
+final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
+        AbstractResponseHandlerResponseConsumer<I, List<T>> {
     private final List<T> results = new ArrayList<>();
 
     private final StreamFutureCallback<T> callback;
+    private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
-    private StreamResponseHandlerResponseConsumer(final HttpClientResponseHandler<T> responseHandler,
+    private StreamResponseHandlerResponseConsumer(final HttpClientResponseHandler<I> responseHandler,
                                                   final StreamFutureCallback<T> callback) {
         super(responseHandler);
         this.callback = callback;
+    }
+
+    @Override
+    protected void start(final HttpResponse response, final ContentType contentType) {
+        super.start(response, contentType);
+        this.refStringBuilder.set(new StringBuilder());
     }
 
     @Override
@@ -26,17 +37,27 @@ final class StreamResponseHandlerResponseConsumer<T> extends AbstractResponseHan
 
     @Override
     protected void data(final CharBuffer src, final boolean endOfStream) throws IOException {
-        for (final String s : src.toString().split("\n")) {
-            if (StringUtils.isNotBlank(s)) {
-                final T result = handleResponse(s);
-                results.add(result);
-                callback.stream(result);
+        final StringBuilder builder = refStringBuilder.get().append(src);
+        while (builder.length() > 0) {
+            final Index<T> result = handleResponse(builder.toString());
+            final int index = result.getIndex();
+            builder.delete(0, index > 0 ? index : builder.length());
+            final T data = result.getData();
+            if (data != null) {
+                results.add(data);
+                callback.stream(data);
             }
         }
     }
 
-    static <T> StreamResponseHandlerResponseConsumer<T> create(final HttpClientResponseHandler<T> responseHandler,
-                                                               final StreamFutureCallback<T> callback) {
-        return new StreamResponseHandlerResponseConsumer<>(responseHandler, callback);
+    @Override
+    public void releaseResources() {
+        super.releaseResources();
+        this.refStringBuilder.set(null);
+    }
+
+    static <T, I extends Index<T>> StreamResponseHandlerResponseConsumer<T, I> create(
+            final HttpClientResponseHandler<I> handler, final StreamFutureCallback<T> callback) {
+        return new StreamResponseHandlerResponseConsumer<>(handler, callback);
     }
 }

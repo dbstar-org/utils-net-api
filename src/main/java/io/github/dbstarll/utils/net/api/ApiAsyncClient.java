@@ -32,8 +32,6 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
     }
 
     private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {
-        traceRequest(request);
-
         final HttpEntity entity = request.getEntity();
         if (entity != null) {
             final byte[] data = IOUtils.readFully(entity.getContent(), (int) entity.getContentLength());
@@ -46,8 +44,10 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final AsyncResponseConsumer<T> responseConsumer,
-                                          final FutureCallback<T> callback) throws IOException {
+                                          final FutureCallback<T> callback) throws IOException, ApiException {
         notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
+
+        traceRequest(request);
 
         return httpClient.execute(buildRequestProducer(request), new AsyncResponseConsumerWrapper<T>(responseConsumer) {
             @Override
@@ -69,21 +69,21 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final HttpClientResponseHandler<T> responseHandler,
-                                          final FutureCallback<T> callback) throws IOException {
+                                          final FutureCallback<T> callback) throws IOException, ApiException {
         notNull(responseHandler, "responseHandler is null");
         return execute(request, ResponseHandlerResponseConsumer.create(responseHandler), callback);
     }
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final Class<T> responseClass,
-                                          final FutureCallback<T> callback) throws IOException {
+                                          final FutureCallback<T> callback) throws IOException, ApiException {
         notNull(responseClass, "responseClass is null");
         return execute(request, getResponseHandler(responseClass), callback);
     }
 
     protected final <T, I extends Index<T>> Future<List<T>> execute(
             final ClassicHttpRequest request, final HttpClientResponseHandler<I> responseHandler,
-            final StreamFutureCallback<T, I> callback) throws IOException {
+            final StreamFutureCallback<T, I> callback) throws IOException, ApiException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
         return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, callback), callback);
@@ -91,7 +91,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T, I extends Index<T>> Future<List<T>> execute(
             final ClassicHttpRequest request, final Class<I> responseClass,
-            final StreamFutureCallback<T, I> callback) throws IOException {
+            final StreamFutureCallback<T, I> callback) throws IOException, ApiException {
         notNull(responseClass, "responseClass is null");
         notNull(callback, "callback is null");
         return execute(request, getResponseHandler(responseClass), callback);

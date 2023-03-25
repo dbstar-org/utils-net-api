@@ -6,11 +6,15 @@ import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.EntityDetails;
+import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.apache.hc.core5.http.io.support.ClassicRequestBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -88,12 +92,25 @@ public abstract class AbstractApiClient<C> {
         return builder.setCharset(charset);
     }
 
-    protected final void traceRequest(final ClassicHttpRequest request) {
+    protected final void traceRequest(final ClassicHttpRequest request) throws IOException, ApiException {
         notNull(request, REQUEST_IS_NULL_EX_MESSAGE);
 
-        if (request.getEntity() != null) {
+        final HttpEntity entity = request.getEntity();
+        if (entity != null) {
             final String traceEntity = format(request.getEntity());
-            logger.trace("request: [{}]@{} with {}", request, request.hashCode(), traceEntity);
+            if (entity.isRepeatable()) {
+                final String content;
+                try {
+                    content = EntityUtils.toString(request.getEntity());
+                } catch (ParseException e) {
+                    throw new ApiProtocolException(e);
+                }
+                logger.trace("request: [{}]@{} with {}:{}:{}", request, request.hashCode(),
+                        request.getEntity().getClass().getSimpleName(), traceEntity, content);
+            } else {
+                logger.trace("request: [{}]@{} with {}:{}", request, request.hashCode(),
+                        request.getEntity().getClass().getSimpleName(), traceEntity);
+            }
         } else {
             logger.trace("request: [{}]@{}", request, request.hashCode());
         }

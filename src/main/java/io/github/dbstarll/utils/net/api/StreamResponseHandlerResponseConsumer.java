@@ -15,11 +15,11 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
         AbstractResponseHandlerResponseConsumer<I, List<T>> {
     private final List<T> results = new ArrayList<>();
 
-    private final StreamFutureCallback<T> callback;
+    private final StreamFutureCallback<T, I> callback;
     private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
     private StreamResponseHandlerResponseConsumer(final HttpClientResponseHandler<I> responseHandler,
-                                                  final StreamFutureCallback<T> callback) {
+                                                  final StreamFutureCallback<T, I> callback) {
         super(responseHandler);
         this.callback = callback;
     }
@@ -39,13 +39,13 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     protected void data(final CharBuffer src, final boolean endOfStream) throws IOException {
         final StringBuilder builder = refStringBuilder.get().append(src);
         while (builder.length() > 0) {
-            final Index<T> result = handleResponse(builder.toString());
+            final I result = handleResponse(builder.toString());
             final int index = result.getIndex();
             builder.delete(0, index > 0 ? index : builder.length());
             final T data = result.getData();
             if (data != null) {
                 results.add(data);
-                callback.stream(data);
+                callback.stream(result);
             }
         }
     }
@@ -57,7 +57,7 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     }
 
     static <T, I extends Index<T>> StreamResponseHandlerResponseConsumer<T, I> create(
-            final HttpClientResponseHandler<I> handler, final StreamFutureCallback<T> callback) {
+            final HttpClientResponseHandler<I> handler, final StreamFutureCallback<T, I> callback) {
         return new StreamResponseHandlerResponseConsumer<>(handler, callback);
     }
 }

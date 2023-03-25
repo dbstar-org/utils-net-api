@@ -1,5 +1,6 @@
 package io.github.dbstarll.utils.net.api.index;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.HttpException;
@@ -13,7 +14,7 @@ public final class StringIndexResponseHandler implements HttpClientResponseHandl
     @Override
     public StringIndex handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
         final String data = BASIC_HANDLER.handleResponse(response);
-        if (data == null) {
+        if (StringUtils.isBlank(data)) {
             return new StringIndex(null, -1);
         }
         final int index = data.indexOf('\n');

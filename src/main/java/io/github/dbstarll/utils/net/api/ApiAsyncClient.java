@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
@@ -117,13 +118,13 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         traceRequest(request);
 
         return httpClient.execute(buildRequestProducer(request), new AsyncResponseConsumerWrapper<T>(responseConsumer) {
-            private volatile EntityDetails entityDetails;
+            private final AtomicReference<EntityDetails> refEntityDetails = new AtomicReference<>();
 
             @Override
             public void consumeResponse(final HttpResponse response, final EntityDetails entityDetails,
                                         final HttpContext context, final FutureCallback<T> resultCallback)
                     throws HttpException, IOException {
-                this.entityDetails = entityDetails;
+                this.refEntityDetails.set(entityDetails);
                 ApiAsyncClient.this.consumeResponse(request, response, entityDetails);
                 super.consumeResponse(response, entityDetails, context, resultCallback);
             }
@@ -132,7 +133,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
             public void consume(final ByteBuffer src) throws IOException {
                 final int position = src.position();
                 try {
-                    ApiAsyncClient.this.consume(request, entityDetails, src);
+                    ApiAsyncClient.this.consume(request, refEntityDetails.get(), src);
                 } finally {
                     src.position(position);
                 }
@@ -141,7 +142,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
             @Override
             public void releaseResources() {
-                this.entityDetails = null;
+                this.refEntityDetails.set(null);
                 super.releaseResources();
             }
         }, null, null, new CallbackContribution<T>(callback) {

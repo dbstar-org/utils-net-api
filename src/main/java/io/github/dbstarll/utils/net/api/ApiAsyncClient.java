@@ -112,7 +112,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final AsyncResponseConsumer<T> responseConsumer,
-                                          final FutureCallback<T> callback) throws IOException, ApiException {
+                                          final FutureCallback<T> callback) throws IOException {
         notNull(responseConsumer, RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE);
 
         traceRequest(request);
@@ -158,21 +158,21 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final HttpClientResponseHandler<T> responseHandler,
-                                          final FutureCallback<T> callback) throws IOException, ApiException {
+                                          final FutureCallback<T> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         return execute(request, ResponseHandlerResponseConsumer.create(responseHandler), callback);
     }
 
     protected final <T> Future<T> execute(final ClassicHttpRequest request,
                                           final Class<T> responseClass,
-                                          final FutureCallback<T> callback) throws IOException, ApiException {
+                                          final FutureCallback<T> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         return execute(request, getResponseHandler(responseClass), callback);
     }
 
     protected final <T, I extends Index<T>> Future<List<T>> execute(
             final ClassicHttpRequest request, final HttpClientResponseHandler<I> responseHandler,
-            final StreamFutureCallback<T, I> callback) throws IOException, ApiException {
+            final StreamFutureCallback<T, I> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
         final StreamFutureCallback<T, I> myCallback = new StreamCallbackContribution<T, I>(callback) {
@@ -186,7 +186,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected final <T, I extends Index<T>> Future<List<T>> execute(
             final ClassicHttpRequest request, final Class<I> responseClass,
-            final StreamFutureCallback<T, I> callback) throws IOException, ApiException {
+            final StreamFutureCallback<T, I> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         notNull(callback, "callback is null");
         return execute(request, getResponseHandler(responseClass), callback);

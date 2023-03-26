@@ -20,6 +20,7 @@ import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -180,6 +181,21 @@ class ApiClientTest {
             assertEquals(UnsupportedOperationException.class, e.getCause().getClass());
             assertEquals("Unsupported", e.getCause().getMessage());
             assertEquals(1, server.getRequestCount());
+        });
+    }
+
+    @Test
+    void traceRequestNoRepeatable() throws Throwable {
+        useClient((server, client) -> {
+            final HttpEntity entity = EntityBuilder.create()
+                    .setStream(new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)))
+                    .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
+            final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
+            assertEquals("ok", client.execute(request, String.class));
+            assertEquals(1, server.getRequestCount());
+            final RecordedRequest recorded = server.takeRequest();
+            assertEquals("POST", recorded.getMethod());
+            assertEquals("/ping.html", recorded.getPath());
         });
     }
 

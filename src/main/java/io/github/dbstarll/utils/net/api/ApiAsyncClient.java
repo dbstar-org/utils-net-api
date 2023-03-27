@@ -19,6 +19,7 @@ import org.apache.hc.core5.http.nio.support.BasicRequestProducer;
 import org.apache.hc.core5.http.protocol.HttpContext;
 
 import java.io.IOException;
+import java.lang.reflect.ParameterizedType;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -83,12 +84,10 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
      * @param request the request
      * @param result  the data packet.
      * @param <T>     type of result
-     * @param <I>     Index of T
      * @return result
      */
-    protected <T, I extends Index<T>> I stream(final ClassicHttpRequest request, final I result) {
-        logger.trace("stream: [{}]@{} with {}:{}[{}]", request, request.hashCode(),
-                result.getData().getClass().getName(), result.getIndex(), result.getData());
+    protected <T> T stream(final ClassicHttpRequest request, final T result) {
+        logger.trace("stream: [{}]@{} with {}:[{}]", request, request.hashCode(), result.getClass().getName(), result);
         return result;
     }
 
@@ -170,25 +169,32 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         return execute(request, getResponseHandler(responseClass), callback);
     }
 
-    protected final <T, I extends Index<T>> Future<List<T>> execute(
-            final ClassicHttpRequest request, final HttpClientResponseHandler<I> responseHandler,
-            final StreamFutureCallback<T, I> callback) throws IOException {
+    protected final <T> Future<List<T>> execute(final ClassicHttpRequest request,
+                                                final HttpClientResponseHandler<? extends Index<T>> responseHandler,
+                                                final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
-        final StreamFutureCallback<T, I> myCallback = new StreamCallbackContribution<T, I>(callback) {
-            @Override
-            public void stream(final I result) {
-                super.stream(ApiAsyncClient.this.stream(request, result));
-            }
-        };
-        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, myCallback), myCallback);
+        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler,
+                result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
     }
 
-    protected final <T, I extends Index<T>> Future<List<T>> execute(
-            final ClassicHttpRequest request, final Class<I> responseClass,
-            final StreamFutureCallback<T, I> callback) throws IOException {
+    protected final <T> Future<List<T>> execute(final ClassicHttpRequest request, final Class<T> responseClass,
+                                                final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         notNull(callback, "callback is null");
-        return execute(request, getResponseHandler(responseClass), callback);
+        final Class<? extends Index<T>> streamResponseClass = getStreamResponseClass(responseClass);
+        notNull(streamResponseClass, "streamResponseClass is null");
+        return execute(request, getResponseHandler(streamResponseClass), callback);
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> Class<? extends Index<T>> getStreamResponseClass(final Class<T> responseClass) {
+        for (Class<?> c : responseClassIterator()) {
+            if (Index.class.isAssignableFrom(c)
+                    && responseClass == ((ParameterizedType) c.getGenericSuperclass()).getActualTypeArguments()[0]) {
+                return (Class<? extends Index<T>>) c;
+            }
+        }
+        return null;
     }
 }

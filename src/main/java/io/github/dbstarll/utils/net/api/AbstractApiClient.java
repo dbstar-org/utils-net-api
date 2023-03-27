@@ -56,6 +56,10 @@ public abstract class AbstractApiClient<C> {
         return responseHandlerFactory.getResponseHandler(responseClass);
     }
 
+    protected final Iterable<Class<?>> responseClassIterator() {
+        return () -> responseHandlerFactory.iterator();
+    }
+
     protected final ClassicRequestBuilder get(final URI uri) throws ApiException {
         return preProcessing(ClassicRequestBuilder.get(uri));
     }

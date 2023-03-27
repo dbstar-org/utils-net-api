@@ -3,7 +3,6 @@ package io.github.dbstarll.utils.net.api;
 import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
-import io.github.dbstarll.utils.net.api.index.Index;
 import io.github.dbstarll.utils.net.api.index.StringIndex;
 import io.github.dbstarll.utils.net.api.index.StringIndexResponseHandler;
 import okhttp3.mockwebserver.MockResponse;
@@ -175,7 +174,7 @@ class ApiAsyncClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class, null).get());
+            assertEquals("ok", client.execute(request, String.class, (FutureCallback<String>) null).get());
 
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
@@ -238,8 +237,8 @@ class ApiAsyncClientTest {
     void stream() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("https://httpbin.y1cloud.com/stream/3").build();
-            final MyStreamFutureCallback<String, StringIndex> callback = new MyStreamFutureCallback<>();
-            final Future<List<String>> future = client.execute(request, StringIndex.class, callback);
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final Future<List<String>> future = client.execute(request, String.class, callback);
             assertEquals(3, future.get().size());
             callback.assertResult(future.get());
             assertEquals(callback.results, future.get());
@@ -250,19 +249,29 @@ class ApiAsyncClientTest {
     void streamMore() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            final MyStreamFutureCallback<String, StringIndex> callback = new MyStreamFutureCallback<>();
-            final Future<List<String>> future = client.execute(request, StringIndex.class, callback);
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final Future<List<String>> future = client.execute(request, String.class, callback);
             assertEquals(1, future.get().size());
             assertEquals("ok", future.get().get(0));
             callback.assertResult(future.get());
             assertEquals(callback.results, future.get());
 
-            final MyStreamFutureCallback<String, StringIndex> callback2 = new MyStreamFutureCallback<>();
-            final Future<List<String>> future2 = client.execute(request, StringIndex.class, callback2);
+            final MyStreamFutureCallback<String> callback2 = new MyStreamFutureCallback<>();
+            final Future<List<String>> future2 = client.execute(request, String.class, callback2);
             assertEquals(0, future2.get().size());
             callback2.assertResult(future2.get());
             assertEquals(callback2.results, future2.get());
         }, s -> s.enqueue(new MockResponse().setBody("  ")));
+    }
+
+    @Test
+    void streamNull() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final MyStreamFutureCallback<Long> callback = new MyStreamFutureCallback<>();
+            final Exception e = assertThrowsExactly(NullPointerException.class, () -> client.execute(request, Long.class, callback));
+            assertEquals("streamResponseClass is null", e.getMessage());
+        });
     }
 
     private static class MyClient extends ApiAsyncClient {
@@ -362,14 +371,13 @@ class ApiAsyncClientTest {
         }
     }
 
-    private static class MyStreamFutureCallback<T, I extends Index<T>> extends MyFutureCallback<List<T>>
-            implements StreamFutureCallback<T, I> {
+    private static class MyStreamFutureCallback<T> extends MyFutureCallback<List<T>>
+            implements StreamFutureCallback<T> {
         private final List<T> results = new ArrayList<>();
 
         @Override
-        public void stream(I result) {
-            System.out.println(result);
-            results.add(result.getData());
+        public void stream(T result) {
+            results.add(result);
         }
     }
 }

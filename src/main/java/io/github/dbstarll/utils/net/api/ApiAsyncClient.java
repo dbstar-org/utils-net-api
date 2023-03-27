@@ -175,13 +175,8 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
             final StreamFutureCallback<T, I> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
-        final StreamFutureCallback<T, I> myCallback = new StreamCallbackContribution<T, I>(callback) {
-            @Override
-            public void stream(final I result) {
-                super.stream(ApiAsyncClient.this.stream(request, result));
-            }
-        };
-        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, myCallback), myCallback);
+        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler,
+                result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
     }
 
     protected final <T, I extends Index<T>> Future<List<T>> execute(

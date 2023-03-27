@@ -15,11 +15,11 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
         AbstractResponseHandlerResponseConsumer<I, List<T>> {
     private final List<T> results = new ArrayList<>();
 
-    private final StreamFutureCallback<T, I> callback;
+    private final StreamCallback<I> callback;
     private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
     private StreamResponseHandlerResponseConsumer(final HttpClientResponseHandler<I> responseHandler,
-                                                  final StreamFutureCallback<T, I> callback) {
+                                                  final StreamCallback<I> callback) {
         super(responseHandler);
         this.callback = callback;
     }
@@ -57,7 +57,7 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     }
 
     static <T, I extends Index<T>> StreamResponseHandlerResponseConsumer<T, I> create(
-            final HttpClientResponseHandler<I> handler, final StreamFutureCallback<T, I> callback) {
+            final HttpClientResponseHandler<I> handler, final StreamCallback<I> callback) {
         return new StreamResponseHandlerResponseConsumer<>(handler, callback);
     }
 }

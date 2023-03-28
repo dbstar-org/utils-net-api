@@ -7,14 +7,10 @@ import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
-        AbstractResponseHandlerResponseConsumer<I, List<T>> {
-    private final List<T> results = new ArrayList<>();
-
+        AbstractResponseHandlerResponseConsumer<I, Void> {
     private final StreamCallback<T> callback;
     private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
@@ -31,21 +27,24 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     }
 
     @Override
-    protected List<T> buildResult() {
-        return results;
+    protected Void buildResult() {
+        return null;
     }
 
     @Override
     protected void data(final CharBuffer src, final boolean endOfStream) throws IOException {
         final StringBuilder builder = refStringBuilder.get().append(src);
         while (builder.length() > 0) {
-            final I result = handleResponse(builder.toString());
-            final int index = result.getIndex();
-            builder.delete(0, index > 0 ? index : builder.length());
-            final T data = result.getData();
-            if (data != null) {
-                results.add(data);
-                callback.stream(result.getData());
+            final I result = handleResponse(builder.toString(), endOfStream);
+            if (result == null) {
+                break;
+            } else {
+                final int index = result.getIndex();
+                builder.delete(0, index > 0 ? index : builder.length());
+                final T data = result.getData();
+                if (data != null) {
+                    callback.stream(result.getData());
+                }
             }
         }
     }

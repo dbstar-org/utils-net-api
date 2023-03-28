@@ -1,27 +1,17 @@
 package io.github.dbstarll.utils.net.api.index;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
-import java.io.IOException;
-
-public final class StringIndexResponseHandler implements HttpClientResponseHandler<StringIndex> {
-    private static final HttpClientResponseHandler<String> BASIC_HANDLER = new BasicHttpClientResponseHandler();
-
+public final class StringIndexResponseHandler extends IndexBaseHttpClientResponseHandler<StringIndex> {
     @Override
-    public StringIndex handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
-        final String data = BASIC_HANDLER.handleResponse(response);
-        if (StringUtils.isBlank(data)) {
-            return new StringIndex(null, -1);
-        }
-        final int index = data.indexOf('\n');
-        if (index < 0) {
-            return new StringIndex(data, index);
+    protected StringIndex handleContent(final String content, final boolean endOfStream) {
+        final int index = StringUtils.indexOf(content, '\n');
+        if (index >= 0) {
+            return new StringIndex(content.substring(0, index), index + 1);
+        } else if (endOfStream) {
+            return new StringIndex(StringUtils.isBlank(content) ? null : content, index);
         } else {
-            return new StringIndex(data.substring(0, index), index + 1);
+            return null;
         }
     }
 }

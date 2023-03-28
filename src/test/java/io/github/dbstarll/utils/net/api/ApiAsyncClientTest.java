@@ -2,9 +2,8 @@ package io.github.dbstarll.utils.net.api;
 
 import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
-import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
-import io.github.dbstarll.utils.net.api.index.StringIndex;
-import io.github.dbstarll.utils.net.api.index.StringIndexResponseHandler;
+import io.github.dbstarll.utils.http.client.response.AbstractResponseHandlerFactory;
+import io.github.dbstarll.utils.net.api.index.EventStream;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -238,10 +237,10 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("https://httpbin.y1cloud.com/stream/3").build();
             final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
-            final Future<List<String>> future = client.execute(request, String.class, callback);
-            assertEquals(3, future.get().size());
+            final Future<Void> future = client.execute(request, String.class, callback);
+            assertNull(future.get());
             callback.assertResult(future.get());
-            assertEquals(callback.results, future.get());
+            assertEquals(3, callback.results.size());
         });
     }
 
@@ -250,17 +249,17 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
-            final Future<List<String>> future = client.execute(request, String.class, callback);
-            assertEquals(1, future.get().size());
-            assertEquals("ok", future.get().get(0));
+            final Future<Void> future = client.execute(request, String.class, callback);
+            assertNull(future.get());
             callback.assertResult(future.get());
-            assertEquals(callback.results, future.get());
+            assertEquals(1, callback.results.size());
+            assertEquals("ok", callback.results.get(0));
 
             final MyStreamFutureCallback<String> callback2 = new MyStreamFutureCallback<>();
-            final Future<List<String>> future2 = client.execute(request, String.class, callback2);
-            assertEquals(0, future2.get().size());
+            final Future<Void> future2 = client.execute(request, String.class, callback2);
+            assertNull(future2.get());
             callback2.assertResult(future2.get());
-            assertEquals(callback2.results, future2.get());
+            assertEquals(0, callback2.results.size());
         }, s -> s.enqueue(new MockResponse().setBody("  ")));
     }
 
@@ -274,6 +273,25 @@ class ApiAsyncClientTest {
         });
     }
 
+    @Test
+    void eventStream() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
+            final Future<Void> future = client.execute(request, EventStream.class, callback);
+            assertNull(future.get());
+            callback.assertResult(future.get());
+            assertEquals(0, callback.results.size());
+
+            final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
+            final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
+            assertNull(future2.get());
+            callback2.assertResult(future2.get());
+            assertEquals(1, callback2.results.size());
+            assertEquals("EventStream[event='test', data='abc\ndef', id='id', retry='5000']", callback2.results.get(0).toString());
+        }, s -> s.enqueue(new MockResponse().setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
+    }
+
     private static class MyClient extends ApiAsyncClient {
         public MyClient(final HttpAsyncClient httpClient, final String uriBase) {
             super(httpClient);
@@ -283,7 +301,7 @@ class ApiAsyncClientTest {
         }
     }
 
-    private static class MyResponseHandlerFactory extends BasicResponseHandlerFactory {
+    private static class MyResponseHandlerFactory extends AbstractResponseHandlerFactory {
         public MyResponseHandlerFactory() {
             addResponseHandler(Long.class, new AbstractHttpClientResponseHandler<Long>() {
                 @Override
@@ -308,7 +326,6 @@ class ApiAsyncClientTest {
             addResponseHandler(BigInteger.class, response -> {
                 throw new HttpException("test throw HttpException");
             });
-            addResponseHandler(StringIndex.class, new StringIndexResponseHandler());
         }
     }
 
@@ -371,7 +388,7 @@ class ApiAsyncClientTest {
         }
     }
 
-    private static class MyStreamFutureCallback<T> extends MyFutureCallback<List<T>>
+    private static class MyStreamFutureCallback<T> extends MyFutureCallback<Void>
             implements StreamFutureCallback<T> {
         private final List<T> results = new ArrayList<>();
 

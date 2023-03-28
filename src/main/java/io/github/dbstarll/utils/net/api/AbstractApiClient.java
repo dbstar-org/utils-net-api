@@ -3,6 +3,7 @@ package io.github.dbstarll.utils.net.api;
 import io.github.dbstarll.utils.http.client.request.AbsoluteUriResolver;
 import io.github.dbstarll.utils.http.client.request.UriResolver;
 import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
+import io.github.dbstarll.utils.http.client.response.MultiResponseHandlerFactory;
 import io.github.dbstarll.utils.http.client.response.ResponseHandlerFactory;
 import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.core5.http.ClassicHttpRequest;
@@ -49,7 +50,8 @@ public abstract class AbstractApiClient<C> {
     }
 
     protected final void setResponseHandlerFactory(final ResponseHandlerFactory responseHandlerFactory) {
-        this.responseHandlerFactory = notNull(responseHandlerFactory, RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE);
+        this.responseHandlerFactory = new MultiResponseHandlerFactory(this.responseHandlerFactory,
+                notNull(responseHandlerFactory, RESPONSE_HANDLER_FACTORY_IS_NULL_EX_MESSAGE));
     }
 
     protected final <T> HttpClientResponseHandler<T> getResponseHandler(final Class<T> responseClass) {

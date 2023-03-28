@@ -7,6 +7,7 @@ import org.apache.hc.core5.http.HttpException;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.support.ClassicResponseBuilder;
+import org.apache.hc.core5.http.nio.entity.AbstractCharDataConsumer;
 
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -27,12 +28,13 @@ public abstract class AbstractResponseHandlerResponseConsumer<H, T> extends Abst
         this.refContentType.set(contentType);
     }
 
-    protected final H handleResponse(final String content) throws IOException {
+    protected final H handleResponse(final String content, final boolean endOfStream) throws IOException {
         final HttpResponse response = refHttpResponse.get();
         final ClassicHttpResponse classicHttpResponse = ClassicResponseBuilder.create(response.getCode())
                 .setVersion(response.getVersion())
                 .setHeaders(response.getHeaders())
                 .setEntity(content, refContentType.get())
+                .setHeader(AbstractCharDataConsumer.class.getName() + "@endOfStream", Boolean.toString(endOfStream))
                 .build();
         try {
             return responseHandler.handleResponse(classicHttpResponse);

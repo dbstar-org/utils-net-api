@@ -21,7 +21,6 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.nio.ByteBuffer;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,6 +31,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected ApiAsyncClient(final HttpAsyncClient httpClient) {
         super(httpClient);
+        setResponseHandlerFactory(new BasicIndexResponseHandlerFactory());
     }
 
     private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {
@@ -169,17 +169,17 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         return execute(request, getResponseHandler(responseClass), callback);
     }
 
-    protected final <T> Future<List<T>> execute(final ClassicHttpRequest request,
-                                                final HttpClientResponseHandler<? extends Index<T>> responseHandler,
-                                                final StreamFutureCallback<T> callback) throws IOException {
+    protected final <T> Future<Void> execute(final ClassicHttpRequest request,
+                                             final HttpClientResponseHandler<? extends Index<T>> responseHandler,
+                                             final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
         return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler,
                 result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
     }
 
-    protected final <T> Future<List<T>> execute(final ClassicHttpRequest request, final Class<T> responseClass,
-                                                final StreamFutureCallback<T> callback) throws IOException {
+    protected final <T> Future<Void> execute(final ClassicHttpRequest request, final Class<T> responseClass,
+                                             final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         notNull(callback, "callback is null");
         final Class<? extends Index<T>> streamResponseClass = getStreamResponseClass(responseClass);

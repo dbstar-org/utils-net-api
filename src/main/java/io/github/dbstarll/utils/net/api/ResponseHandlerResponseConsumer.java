@@ -23,7 +23,7 @@ final class ResponseHandlerResponseConsumer<T> extends AbstractResponseHandlerRe
 
     @Override
     protected T buildResult() throws IOException {
-        return handleResponse(refStringBuilder.get().toString());
+        return handleResponse(refStringBuilder.get().toString(), true);
     }
 
     @Override

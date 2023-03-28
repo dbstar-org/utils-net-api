@@ -285,16 +285,14 @@ class ApiAsyncClientTest {
             final Future<Void> future = client.execute(request, EventStream.class, callback);
             assertNull(future.get());
             callback.assertResult(future.get());
-            assertEquals(1, callback.results.size());
-            assertEquals("EventStream[event='null', data='null', id='null', retry='null']", callback.results.get(0).toString());
+            assertEquals(0, callback.results.size());
 
             final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
             assertNull(future2.get());
             callback2.assertResult(future2.get());
-            assertEquals(2, callback2.results.size());
+            assertEquals(1, callback2.results.size());
             assertEquals("EventStream[event='test', data='abc\ndef', id='id', retry='5000']", callback2.results.get(0).toString());
-            assertEquals("EventStream[event='null', data='null', id='null', retry='null']", callback2.results.get(1).toString());
         }, s -> s.enqueue(new MockResponse().setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
     }
 

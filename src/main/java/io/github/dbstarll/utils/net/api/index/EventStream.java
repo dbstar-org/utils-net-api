@@ -1,52 +1,19 @@
 package io.github.dbstarll.utils.net.api.index;
 
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.StringJoiner;
 
 public final class EventStream {
-    private static final Logger LOGGER = LoggerFactory.getLogger(EventStream.class);
-
-    private static final String FIELD_EVENT = "event";
-    private static final String FIELD_DATA = "data";
-    private static final String FIELD_ID = "id";
-    private static final String FIELD_RETRY = "retry";
-
     private String event;
     private String data;
     private String id;
     private Integer retry;
 
-    EventStream(final String content) {
-        for (final String split : StringUtils.split(content, '\n')) {
-            final int idxField = split.indexOf(':');
-            if (idxField < 0) {
-                setField(split, "");
-            } else {
-                setField(split.substring(0, idxField), split.substring(idxField + 1).trim());
-            }
-        }
+    EventStream() {
+        // empty
     }
 
-    private void setField(final String field, final String value) {
-        switch (field) {
-            case FIELD_EVENT:
-                this.event = value;
-                break;
-            case FIELD_DATA:
-                setData(value);
-                break;
-            case FIELD_ID:
-                this.id = value;
-                break;
-            case FIELD_RETRY:
-                setRetry(value);
-                break;
-            default:
-                LOGGER.warn("unknown field: {}={}", field, value);
-        }
+    void setEvent(final String event) {
+        this.event = event;
     }
 
     /**
@@ -60,7 +27,7 @@ public final class EventStream {
         return event;
     }
 
-    private void setData(final String value) {
+    void setData(final String value) {
         if (data == null) {
             data = value;
         } else {
@@ -78,6 +45,10 @@ public final class EventStream {
         return data;
     }
 
+    void setId(final String id) {
+        this.id = id;
+    }
+
     /**
      * The event ID to set the EventSource object's last event ID value.
      *
@@ -87,12 +58,8 @@ public final class EventStream {
         return id;
     }
 
-    private void setRetry(final String value) {
-        try {
-            this.retry = Integer.valueOf(value);
-        } catch (NumberFormatException e) {
-            LOGGER.warn("retry not an integer: " + value, e);
-        }
+    void setRetry(final Integer value) {
+        this.retry = value;
     }
 
     /**

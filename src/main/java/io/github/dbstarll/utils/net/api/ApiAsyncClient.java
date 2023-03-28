@@ -188,7 +188,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
     }
 
     @SuppressWarnings("unchecked")
-    private <T> Class<? extends Index<T>> getStreamResponseClass(final Class<T> responseClass) {
+    protected final <T> Class<? extends Index<T>> getStreamResponseClass(final Class<T> responseClass) {
         for (Class<?> c : responseClassIterator()) {
             if (Index.class.isAssignableFrom(c)
                     && responseClass == ((ParameterizedType) c.getGenericSuperclass()).getActualTypeArguments()[0]) {

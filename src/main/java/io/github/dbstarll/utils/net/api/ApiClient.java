@@ -62,7 +62,17 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient> {
         }
     }
 
-    protected final <T> T execute(final ClassicHttpRequest request, final Class<T> responseClass)
+    /**
+     * 根据请求结果类来获得相应的请求结果.
+     *
+     * @param request       request
+     * @param responseClass 请求结果类
+     * @param <T>           请求结果类型
+     * @return 请求结果
+     * @throws IOException  IOException
+     * @throws ApiException api处理异常
+     */
+    protected <T> T execute(final ClassicHttpRequest request, final Class<T> responseClass)
             throws IOException, ApiException {
         notNull(responseClass, "responseClass is null");
         return execute(request, getResponseHandler(responseClass));

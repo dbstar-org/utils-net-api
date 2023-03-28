@@ -162,9 +162,19 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         return execute(request, ResponseHandlerResponseConsumer.create(responseHandler), callback);
     }
 
-    protected final <T> Future<T> execute(final ClassicHttpRequest request,
-                                          final Class<T> responseClass,
-                                          final FutureCallback<T> callback) throws IOException {
+    /**
+     * 根据请求结果类来获得相应的请求结果.
+     *
+     * @param request       the request to execute
+     * @param responseClass 请求结果类
+     * @param callback      FutureCallback
+     * @param <T>           请求结果类型
+     * @return 请求结果
+     * @throws IOException IOException
+     */
+    protected <T> Future<T> execute(final ClassicHttpRequest request,
+                                    final Class<T> responseClass,
+                                    final FutureCallback<T> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         return execute(request, getResponseHandler(responseClass), callback);
     }
@@ -178,8 +188,18 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
                 result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
     }
 
-    protected final <T> Future<Void> execute(final ClassicHttpRequest request, final Class<T> responseClass,
-                                             final StreamFutureCallback<T> callback) throws IOException {
+    /**
+     * 根据请求结果类来获得相应的流式请求结果.
+     *
+     * @param request       the request to execute
+     * @param responseClass 请求结果类
+     * @param callback      StreamFutureCallback
+     * @param <T>           请求结果类型
+     * @return 请求结果
+     * @throws IOException IOException
+     */
+    protected <T> Future<Void> execute(final ClassicHttpRequest request, final Class<T> responseClass,
+                                       final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseClass, "responseClass is null");
         notNull(callback, "callback is null");
         final Class<? extends Index<T>> streamResponseClass = getStreamResponseClass(responseClass);

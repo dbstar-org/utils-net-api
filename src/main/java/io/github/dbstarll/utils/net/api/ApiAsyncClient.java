@@ -31,6 +31,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
     protected ApiAsyncClient(final HttpAsyncClient httpClient) {
         super(httpClient);
+        setResponseHandlerFactory(new BasicIndexResponseHandlerFactory());
     }
 
     private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {

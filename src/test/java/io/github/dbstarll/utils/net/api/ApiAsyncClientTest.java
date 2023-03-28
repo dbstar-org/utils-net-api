@@ -2,12 +2,8 @@ package io.github.dbstarll.utils.net.api;
 
 import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
-import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
+import io.github.dbstarll.utils.http.client.response.AbstractResponseHandlerFactory;
 import io.github.dbstarll.utils.net.api.index.EventStream;
-import io.github.dbstarll.utils.net.api.index.EventStreamIndex;
-import io.github.dbstarll.utils.net.api.index.EventStreamIndexResponseHandler;
-import io.github.dbstarll.utils.net.api.index.StringIndex;
-import io.github.dbstarll.utils.net.api.index.StringIndexResponseHandler;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -305,7 +301,7 @@ class ApiAsyncClientTest {
         }
     }
 
-    private static class MyResponseHandlerFactory extends BasicResponseHandlerFactory {
+    private static class MyResponseHandlerFactory extends AbstractResponseHandlerFactory {
         public MyResponseHandlerFactory() {
             addResponseHandler(Long.class, new AbstractHttpClientResponseHandler<Long>() {
                 @Override
@@ -330,8 +326,6 @@ class ApiAsyncClientTest {
             addResponseHandler(BigInteger.class, response -> {
                 throw new HttpException("test throw HttpException");
             });
-            addResponseHandler(StringIndex.class, new StringIndexResponseHandler());
-            addResponseHandler(EventStreamIndex.class, new EventStreamIndexResponseHandler());
         }
     }
 

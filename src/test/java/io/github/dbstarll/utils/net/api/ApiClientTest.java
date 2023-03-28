@@ -2,7 +2,7 @@ package io.github.dbstarll.utils.net.api;
 
 import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
-import io.github.dbstarll.utils.http.client.response.BasicResponseHandlerFactory;
+import io.github.dbstarll.utils.http.client.response.AbstractResponseHandlerFactory;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -208,7 +208,7 @@ class ApiClientTest {
         }
     }
 
-    private static class MyResponseHandlerFactory extends BasicResponseHandlerFactory {
+    private static class MyResponseHandlerFactory extends AbstractResponseHandlerFactory {
         public MyResponseHandlerFactory() {
             addResponseHandler(Long.class, new AbstractHttpClientResponseHandler<Long>() {
                 @Override

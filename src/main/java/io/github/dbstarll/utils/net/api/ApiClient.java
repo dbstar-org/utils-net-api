@@ -14,8 +14,8 @@ import static org.apache.commons.lang3.Validate.notNull;
 public abstract class ApiClient extends AbstractApiClient<HttpClient> {
     private static final String RESPONSE_HANDLER_IS_NULL_EX_MESSAGE = "responseHandler is null";
 
-    protected ApiClient(final HttpClient httpClient) {
-        super(httpClient);
+    protected ApiClient(final HttpClient httpClient, final boolean alwaysProcessEntity) {
+        super(httpClient, alwaysProcessEntity);
     }
 
     @Override

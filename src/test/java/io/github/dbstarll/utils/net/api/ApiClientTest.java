@@ -201,7 +201,7 @@ class ApiClientTest {
 
     private static class MyClient extends ApiClient {
         public MyClient(final HttpClient httpClient, final String uriBase) {
-            super(httpClient);
+            super(httpClient, false);
             setUriResolver(new RelativeUriResolver(uriBase));
             setCharset(StandardCharsets.UTF_8);
             setResponseHandlerFactory(new MyResponseHandlerFactory());

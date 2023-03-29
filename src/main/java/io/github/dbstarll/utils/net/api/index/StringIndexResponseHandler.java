@@ -1,8 +1,18 @@
 package io.github.dbstarll.utils.net.api.index;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 public final class StringIndexResponseHandler extends IndexBaseHttpClientResponseHandler<StringIndex> {
+    /**
+     * 构建StringIndexResponseHandler.
+     *
+     * @param stringResponseHandler ResponseHandler for String
+     */
+    public StringIndexResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
+        super(stringResponseHandler);
+    }
+
     @Override
     protected StringIndex handleContent(final String content, final boolean endOfStream) {
         final int index = StringUtils.indexOf(content, '\n');

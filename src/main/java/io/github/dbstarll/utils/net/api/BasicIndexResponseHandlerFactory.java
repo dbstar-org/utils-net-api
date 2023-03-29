@@ -5,13 +5,16 @@ import io.github.dbstarll.utils.net.api.index.EventStreamIndex;
 import io.github.dbstarll.utils.net.api.index.EventStreamIndexResponseHandler;
 import io.github.dbstarll.utils.net.api.index.StringIndex;
 import io.github.dbstarll.utils.net.api.index.StringIndexResponseHandler;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 public class BasicIndexResponseHandlerFactory extends AbstractResponseHandlerFactory {
     /**
-     * 构造IndexResponseHandlerFactory.
+     * 构造BasicIndexResponseHandlerFactory.
+     *
+     * @param stringResponseHandler ResponseHandler for String
      */
-    public BasicIndexResponseHandlerFactory() {
-        addResponseHandler(StringIndex.class, new StringIndexResponseHandler());
-        addResponseHandler(EventStreamIndex.class, new EventStreamIndexResponseHandler());
+    public BasicIndexResponseHandlerFactory(final HttpClientResponseHandler<String> stringResponseHandler) {
+        addResponseHandler(StringIndex.class, new StringIndexResponseHandler(stringResponseHandler));
+        addResponseHandler(EventStreamIndex.class, new EventStreamIndexResponseHandler(stringResponseHandler));
     }
 }

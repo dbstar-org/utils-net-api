@@ -35,10 +35,11 @@ public abstract class AbstractApiClient<C> {
 
     private UriResolver uriResolver = new AbsoluteUriResolver();
     private Charset charset = StandardCharsets.UTF_8;
-    private ResponseHandlerFactory responseHandlerFactory = new BasicResponseHandlerFactory();
+    private ResponseHandlerFactory responseHandlerFactory;
 
-    protected AbstractApiClient(final C httpClient) {
+    protected AbstractApiClient(final C httpClient, final boolean alwaysProcessEntity) {
         this.httpClient = notNull(httpClient, HTTP_CLIENT_IS_NULL_EX_MESSAGE);
+        this.responseHandlerFactory = new BasicResponseHandlerFactory(alwaysProcessEntity);
     }
 
     protected final void setUriResolver(final UriResolver uriResolver) {

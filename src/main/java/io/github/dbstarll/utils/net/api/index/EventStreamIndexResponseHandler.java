@@ -1,6 +1,7 @@
 package io.github.dbstarll.utils.net.api.index;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,15 @@ public final class EventStreamIndexResponseHandler extends IndexBaseHttpClientRe
     private static final String FIELD_DATA = "data";
     private static final String FIELD_ID = "id";
     private static final String FIELD_RETRY = "retry";
+
+    /**
+     * 构建EventStreamIndexResponseHandler.
+     *
+     * @param stringResponseHandler ResponseHandler for String
+     */
+    public EventStreamIndexResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
+        super(stringResponseHandler);
+    }
 
     @Override
     protected EventStreamIndex handleContent(final String content, final boolean endOfStream) {

@@ -294,7 +294,7 @@ class ApiAsyncClientTest {
 
     private static class MyClient extends ApiAsyncClient {
         public MyClient(final HttpAsyncClient httpClient, final String uriBase) {
-            super(httpClient);
+            super(httpClient, false);
             setUriResolver(new RelativeUriResolver(uriBase));
             setCharset(StandardCharsets.UTF_8);
             setResponseHandlerFactory(new MyResponseHandlerFactory());

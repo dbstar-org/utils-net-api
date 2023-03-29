@@ -1,6 +1,5 @@
 package io.github.dbstarll.utils.net.api.index;
 
-import org.apache.hc.client5.http.impl.classic.BasicHttpClientResponseHandler;
 import org.apache.hc.core5.http.ClassicHttpResponse;
 import org.apache.hc.core5.http.Header;
 import org.apache.hc.core5.http.HttpException;
@@ -13,11 +12,15 @@ import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class IndexBaseHttpClientResponseHandler<I extends Index<?>>
         implements HttpClientResponseHandler<I> {
-    private static final HttpClientResponseHandler<String> BASIC_HANDLER = new BasicHttpClientResponseHandler();
+    private final HttpClientResponseHandler<String> stringResponseHandler;
+
+    protected IndexBaseHttpClientResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
+        this.stringResponseHandler = stringResponseHandler;
+    }
 
     @Override
     public final I handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
-        final String content = BASIC_HANDLER.handleResponse(response);
+        final String content = stringResponseHandler.handleResponse(response);
         final Header header = response.getHeader(AbstractCharDataConsumer.class.getName() + "@endOfStream");
         return handleContent(content, Boolean.parseBoolean(notNull(header, "header:endOfStream is null").getValue()));
     }

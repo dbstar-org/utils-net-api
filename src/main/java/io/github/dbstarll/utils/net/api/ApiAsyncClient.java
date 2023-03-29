@@ -29,9 +29,9 @@ import static org.apache.commons.lang3.Validate.notNull;
 public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> {
     private static final String RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE = "responseConsumer is null";
 
-    protected ApiAsyncClient(final HttpAsyncClient httpClient) {
-        super(httpClient);
-        setResponseHandlerFactory(new BasicIndexResponseHandlerFactory());
+    protected ApiAsyncClient(final HttpAsyncClient httpClient, final boolean alwaysProcessEntity) {
+        super(httpClient, alwaysProcessEntity);
+        setResponseHandlerFactory(new BasicIndexResponseHandlerFactory(getResponseHandler(String.class)));
     }
 
     private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {

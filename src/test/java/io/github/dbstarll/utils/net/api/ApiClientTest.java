@@ -15,6 +15,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,8 @@ class ApiClientTest {
     private final void useServer(final ThrowingConsumer<MockWebServer> consumer,
                                  final ThrowingConsumer<MockWebServer>... customizers) throws Throwable {
         try (final MockWebServer server = new MockWebServer()) {
-            server.enqueue(new MockResponse().setBody("ok"));
+            server.enqueue(new MockResponse().setBody("好")
+                    .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.create("text/plain", StandardCharsets.UTF_8)));
             for (ThrowingConsumer<MockWebServer> c : customizers) {
                 c.accept(server);
             }
@@ -62,7 +64,7 @@ class ApiClientTest {
     void get() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
@@ -86,7 +88,7 @@ class ApiClientTest {
     void post() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.post("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -100,7 +102,7 @@ class ApiClientTest {
             final HttpEntity entity = EntityBuilder.create().setText("{}")
                     .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
             final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -112,7 +114,7 @@ class ApiClientTest {
     void delete() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.delete("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("DELETE", recorded.getMethod());
@@ -124,7 +126,7 @@ class ApiClientTest {
     void socketTimeoutException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
 
             final IOException e = assertThrows(IOException.class, () -> client.execute(request, String.class));
             assertEquals(SocketTimeoutException.class, e.getClass());
@@ -147,7 +149,7 @@ class ApiClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
 
             final ApiResponseException e = assertThrowsExactly(ApiResponseException.class, () -> client.execute(request, String.class));
             assertEquals(404, e.getStatusCode());
@@ -167,7 +169,7 @@ class ApiClientTest {
             final ApiProtocolException e = assertThrowsExactly(ApiProtocolException.class, () -> client.execute(request, Long.class));
             assertNotNull(e.getCause());
             assertEquals(ClientProtocolException.class, e.getCause().getClass());
-            assertEquals("not a Long value: ok", e.getCause().getMessage());
+            assertEquals("not a Long value: 好", e.getCause().getMessage());
             assertEquals(1, server.getRequestCount());
         });
     }
@@ -191,7 +193,7 @@ class ApiClientTest {
                     .setStream(new ByteArrayInputStream("{}".getBytes(StandardCharsets.UTF_8)))
                     .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
             final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
-            assertEquals("ok", client.execute(request, String.class));
+            assertEquals("好", client.execute(request, String.class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());

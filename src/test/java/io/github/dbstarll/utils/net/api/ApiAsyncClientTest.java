@@ -18,6 +18,7 @@ import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpEntity;
 import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.HttpHeaders;
 import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.function.ThrowingConsumer;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.SocketTimeoutException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,7 +49,8 @@ class ApiAsyncClientTest {
     private final void useServer(final ThrowingConsumer<MockWebServer> consumer,
                                  final ThrowingConsumer<MockWebServer>... customizers) throws Throwable {
         try (final MockWebServer server = new MockWebServer()) {
-            server.enqueue(new MockResponse().setBody("ok"));
+            server.enqueue(new MockResponse().setBody("好")
+                    .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.create("text/plain", StandardCharsets.UTF_8)));
             for (ThrowingConsumer<MockWebServer> c : customizers) {
                 c.accept(server);
             }
@@ -73,13 +76,27 @@ class ApiAsyncClientTest {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final Future<String> future = client.execute(request, String.class, callback);
-            assertEquals("ok", future.get());
-            callback.assertResult("ok");
+            assertEquals("好", future.get());
+            callback.assertResult("好");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());
             assertEquals("/ping.html", recorded.getPath());
         });
+    }
+
+    @Test
+    void getWithCharset() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final Future<String> future = client.execute(request, String.class, (FutureCallback<String>) null);
+            assertEquals("好", future.get());
+
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            final Future<String> future2 = client.charset(StandardCharsets.ISO_8859_1, callback);
+            assertEquals("abc", future2.get());
+            callback.assertResult("abc");
+        }, s -> s.enqueue(new MockResponse().setBody("abc")));
     }
 
     @Test
@@ -101,8 +118,8 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.post("/ping.html").build();
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
-            assertEquals("ok", client.execute(request, String.class, callback).get());
-            callback.assertResult("ok");
+            assertEquals("好", client.execute(request, String.class, callback).get());
+            callback.assertResult("好");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("POST", recorded.getMethod());
@@ -117,8 +134,8 @@ class ApiAsyncClientTest {
                     .setContentType(ContentType.APPLICATION_JSON).setContentEncoding("UTF-8").build();
             final ClassicHttpRequest request = client.post("/ping.html").setEntity(entity).build();
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
-            assertEquals("ok", client.execute(request, String.class, callback).get());
-            callback.assertResult("ok");
+            assertEquals("好", client.execute(request, String.class, callback).get());
+            callback.assertResult("好");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("{}", recorded.getBody().readUtf8());
@@ -132,8 +149,8 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.delete("/ping.html").build();
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
-            assertEquals("ok", client.execute(request, String.class, callback).get());
-            callback.assertResult("ok");
+            assertEquals("好", client.execute(request, String.class, callback).get());
+            callback.assertResult("好");
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("DELETE", recorded.getMethod());
@@ -146,8 +163,8 @@ class ApiAsyncClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
-            assertEquals("ok", client.execute(request, String.class, callback).get());
-            callback.assertResult("ok");
+            assertEquals("好", client.execute(request, String.class, callback).get());
+            callback.assertResult("好");
 
             final MyFutureCallback<String> callback2 = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback2).get());
@@ -173,7 +190,7 @@ class ApiAsyncClientTest {
     void apiResponseException() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
-            assertEquals("ok", client.execute(request, String.class, (FutureCallback<String>) null).get());
+            assertEquals("好", client.execute(request, String.class, (FutureCallback<String>) null).get());
 
             final MyFutureCallback<String> callback = new MyFutureCallback<>();
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
@@ -196,7 +213,7 @@ class ApiAsyncClientTest {
             final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, Long.class, callback).get());
             assertNotNull(e.getCause());
             assertEquals(ClientProtocolException.class, e.getCause().getClass());
-            assertEquals("not a Long value: ok", e.getCause().getMessage());
+            assertEquals("not a Long value: 好", e.getCause().getMessage());
             callback.assertException(e.getCause());
             assertEquals(1, server.getRequestCount());
         });
@@ -253,7 +270,7 @@ class ApiAsyncClientTest {
             assertNull(future.get());
             callback.assertResult(future.get());
             assertEquals(1, callback.results.size());
-            assertEquals("ok", callback.results.get(0));
+            assertEquals("好", callback.results.get(0));
 
             final MyStreamFutureCallback<String> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, String.class, callback2);
@@ -292,12 +309,37 @@ class ApiAsyncClientTest {
         }, s -> s.enqueue(new MockResponse().setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
     }
 
+    @Test
+    void eventStreamCharset() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
+            final Future<Void> future = client.execute(request, EventStream.class, callback);
+            assertNull(future.get());
+            callback.assertResult(future.get());
+            assertEquals(0, callback.results.size());
+
+            final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
+            final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
+            assertNull(future2.get());
+            callback2.assertResult(future2.get());
+            assertEquals(1, callback2.results.size());
+            assertEquals("EventStream[event='中文', data='中文', id='中文', retry='null']", callback2.results.get(0).toString());
+        }, s -> s.enqueue(new MockResponse().setBody("id: 中文\nevent: 中文\ndata: 中文")));
+    }
+
     private static class MyClient extends ApiAsyncClient {
         public MyClient(final HttpAsyncClient httpClient, final String uriBase) {
             super(httpClient, false);
             setUriResolver(new RelativeUriResolver(uriBase));
             setCharset(StandardCharsets.UTF_8);
+            setResponseCharset(StandardCharsets.UTF_8);
             setResponseHandlerFactory(new MyResponseHandlerFactory());
+        }
+
+        public Future<String> charset(final Charset charset, FutureCallback<String> callback) throws ApiException, IOException {
+            setResponseCharset(charset);
+            return execute(get("/ping.html").build(), String.class, callback);
         }
     }
 

@@ -23,7 +23,8 @@ class AsyncResponseConsumerWrapperTest {
         final HttpResponse myResponse = DefaultHttpResponseFactory.INSTANCE.newHttpResponse(200);
         final HttpContext myContext = HttpClientContext.create();
         final AtomicBoolean called = new AtomicBoolean();
-        new AsyncResponseConsumerWrapper<String>(new AbstractResponseHandlerResponseConsumer<String, String>(new BasicHttpClientResponseHandler()) {
+        new AsyncResponseConsumerWrapper<String>(new AbstractResponseHandlerResponseConsumer<String, String>(
+                new BasicHttpClientResponseHandler(), null) {
             @Override
             public void informationResponse(HttpResponse response, HttpContext context) throws HttpException, IOException {
                 super.informationResponse(response, context);
@@ -49,7 +50,8 @@ class AsyncResponseConsumerWrapperTest {
     void updateCapacity() throws IOException {
         final AtomicBoolean called = new AtomicBoolean();
         final AtomicInteger refIncrement = new AtomicInteger();
-        new AsyncResponseConsumerWrapper<String>(new AbstractResponseHandlerResponseConsumer<String, String>(new BasicHttpClientResponseHandler()) {
+        new AsyncResponseConsumerWrapper<String>(new AbstractResponseHandlerResponseConsumer<String, String>(
+                new BasicHttpClientResponseHandler(), null) {
             @Override
             protected int capacityIncrement() {
                 called.set(true);

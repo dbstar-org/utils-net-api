@@ -21,6 +21,8 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -29,9 +31,15 @@ import static org.apache.commons.lang3.Validate.notNull;
 public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> {
     private static final String RESPONSE_CONSUMER_IS_NULL_EX_MESSAGE = "responseConsumer is null";
 
+    private Charset responseCharset = StandardCharsets.UTF_8;
+
     protected ApiAsyncClient(final HttpAsyncClient httpClient, final boolean alwaysProcessEntity) {
         super(httpClient, alwaysProcessEntity);
         setResponseHandlerFactory(new BasicIndexResponseHandlerFactory(getResponseHandler(String.class)));
+    }
+
+    protected final void setResponseCharset(final Charset responseCharset) {
+        this.responseCharset = notNull(responseCharset, "responseCharset is null");
     }
 
     private AsyncRequestProducer buildRequestProducer(final ClassicHttpRequest request) throws IOException {
@@ -159,7 +167,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
                                           final HttpClientResponseHandler<T> responseHandler,
                                           final FutureCallback<T> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
-        return execute(request, ResponseHandlerResponseConsumer.create(responseHandler), callback);
+        return execute(request, ResponseHandlerResponseConsumer.create(responseHandler, responseCharset), callback);
     }
 
     /**
@@ -184,7 +192,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
                                              final StreamFutureCallback<T> callback) throws IOException {
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
-        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler,
+        return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, responseCharset,
                 result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
     }
 

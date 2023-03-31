@@ -30,14 +30,20 @@ public abstract class AbstractResponseHandlerResponseConsumer<H, T> extends Abst
 
     @Override
     protected void start(final HttpResponse response, final ContentType contentType) {
-        final Header h = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
-        if (h == null && !charset.equals(contentType.getCharset())) {
-            setCharset(charset);
-            this.refContentType.set(ContentType.create(contentType.getMimeType(), charset));
-        } else {
-            this.refContentType.set(contentType);
-        }
         this.refHttpResponse.set(response);
+        this.refContentType.set(parseContentType(response, contentType));
+    }
+
+    private ContentType parseContentType(final HttpResponse response, final ContentType contentType) {
+        final Header h = response.getFirstHeader(HttpHeaders.CONTENT_TYPE);
+        final boolean defaultCharsetNotMatch = h == null && !charset.equals(contentType.getCharset());
+        final boolean customCharsetNotSet = h != null && contentType.getCharset() == null;
+        if (defaultCharsetNotMatch || customCharsetNotSet) {
+            setCharset(charset);
+            return ContentType.create(contentType.getMimeType(), charset);
+        } else {
+            return contentType;
+        }
     }
 
     protected final H handleResponse(final String content, final boolean endOfStream) throws IOException {

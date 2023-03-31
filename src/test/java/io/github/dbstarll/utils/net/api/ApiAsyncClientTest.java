@@ -100,6 +100,20 @@ class ApiAsyncClientTest {
     }
 
     @Test
+    void getWithoutCharset() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final Future<String> future = client.execute(request, String.class, (FutureCallback<String>) null);
+            assertEquals("好", future.get());
+
+            final MyFutureCallback<String> callback = new MyFutureCallback<>();
+            final Future<String> future2 = client.charset(StandardCharsets.ISO_8859_1, callback);
+            assertEquals("abc", future2.get());
+            callback.assertResult("abc");
+        }, s -> s.enqueue(new MockResponse().setBody("abc").setHeader(HttpHeaders.CONTENT_TYPE, "text/plain")));
+    }
+
+    @Test
     void getNull() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();

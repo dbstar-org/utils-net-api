@@ -6,13 +6,14 @@ import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class ResponseHandlerResponseConsumer<T> extends AbstractResponseHandlerResponseConsumer<T, T> {
     private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
-    private ResponseHandlerResponseConsumer(final HttpClientResponseHandler<T> responseHandler) {
-        super(responseHandler);
+    private ResponseHandlerResponseConsumer(final HttpClientResponseHandler<T> responseHandler, final Charset charset) {
+        super(responseHandler, charset);
     }
 
     @Override
@@ -37,7 +38,8 @@ final class ResponseHandlerResponseConsumer<T> extends AbstractResponseHandlerRe
         this.refStringBuilder.set(null);
     }
 
-    static <T> ResponseHandlerResponseConsumer<T> create(final HttpClientResponseHandler<T> responseHandler) {
-        return new ResponseHandlerResponseConsumer<>(responseHandler);
+    static <T> ResponseHandlerResponseConsumer<T> create(final HttpClientResponseHandler<T> responseHandler,
+                                                         final Charset charset) {
+        return new ResponseHandlerResponseConsumer<>(responseHandler, charset);
     }
 }

@@ -7,6 +7,7 @@ import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
@@ -15,8 +16,8 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     private final AtomicReference<StringBuilder> refStringBuilder = new AtomicReference<>();
 
     private StreamResponseHandlerResponseConsumer(final HttpClientResponseHandler<I> responseHandler,
-                                                  final StreamCallback<T> callback) {
-        super(responseHandler);
+                                                  final Charset charset, final StreamCallback<T> callback) {
+        super(responseHandler, charset);
         this.callback = callback;
     }
 
@@ -56,7 +57,7 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
     }
 
     static <T, I extends Index<T>> StreamResponseHandlerResponseConsumer<T, I> create(
-            final HttpClientResponseHandler<I> handler, final StreamCallback<T> callback) {
-        return new StreamResponseHandlerResponseConsumer<>(handler, callback);
+            final HttpClientResponseHandler<I> handler, final Charset charset, final StreamCallback<T> callback) {
+        return new StreamResponseHandlerResponseConsumer<>(handler, charset, callback);
     }
 }

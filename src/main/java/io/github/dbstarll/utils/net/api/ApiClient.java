@@ -36,11 +36,26 @@ public abstract class ApiClient extends AbstractApiClient<HttpClient> {
     protected <T> T postProcessing(final ClassicHttpRequest request, final T executeResult) throws ApiException {
         if (executeResult != null) {
             logger.trace("response: [{}]@{} with {}:[{}]", request, request.hashCode(),
-                    executeResult.getClass().getName(), executeResult);
+                    executeResult.getClass().getCanonicalName(), formatExecuteResult(executeResult));
         } else {
             logger.trace("response: [{}]@{} with null", request, request.hashCode());
         }
         return executeResult;
+    }
+
+    /**
+     * 格式化请求结果，用于日志输出.
+     *
+     * @param executeResult 请求结果
+     * @param <T>           请求结果类型
+     * @return 格式化后的请求结果
+     */
+    protected <T> Object formatExecuteResult(final T executeResult) {
+        if (byte[].class == executeResult.getClass()) {
+            return ((byte[]) executeResult).length;
+        } else {
+            return executeResult;
+        }
     }
 
     protected final <T> T execute(final ClassicHttpRequest request, final HttpClientResponseHandler<T> responseHandler)

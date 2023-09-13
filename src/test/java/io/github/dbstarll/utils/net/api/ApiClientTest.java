@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -65,6 +66,18 @@ class ApiClientTest {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             assertEquals("好", client.execute(request, String.class));
+            assertEquals(1, server.getRequestCount());
+            final RecordedRequest recorded = server.takeRequest();
+            assertEquals("GET", recorded.getMethod());
+            assertEquals("/ping.html", recorded.getPath());
+        });
+    }
+
+    @Test
+    void getBytes() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            assertArrayEquals("好".getBytes(StandardCharsets.UTF_8), client.execute(request, byte[].class));
             assertEquals(1, server.getRequestCount());
             final RecordedRequest recorded = server.takeRequest();
             assertEquals("GET", recorded.getMethod());

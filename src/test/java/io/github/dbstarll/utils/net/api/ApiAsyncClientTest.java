@@ -285,6 +285,34 @@ class ApiAsyncClientTest {
     }
 
     @Test
+    void streamCancel() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final Future<Void> future = client.execute(request, String.class, callback);
+            assertTrue(future.cancel(true));
+            callback.assertCancelled(true);
+            assertEquals(0, callback.results.size());
+        });
+    }
+
+    @Test
+    void streamException() throws Throwable {
+        useClient((server, client) -> {
+            final ClassicHttpRequest request = client.get("/ping.html").build();
+            assertEquals("好", client.execute(request, String.class, (FutureCallback<String>) null).get());
+
+            final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, () -> client.execute(request, String.class, callback).get());
+            assertNotNull(e.getCause());
+            assertEquals(HttpResponseException.class, e.getCause().getClass());
+            assertEquals("status code: 404, reason phrase: Not Found", e.getCause().getMessage());
+            callback.assertException(e.getCause());
+            assertEquals(0, callback.results.size());
+        }, s -> s.enqueue(new MockResponse().setResponseCode(404).setBody("not found")));
+    }
+
+    @Test
     void streamNull() throws Throwable {
         useClient((server, client) -> {
             final ClassicHttpRequest request = client.get("/ping.html").build();
@@ -421,6 +449,11 @@ class ApiAsyncClientTest {
             assertSame(ex, this.ex);
         }
 
+        public void assertCancelled(boolean cancelled) {
+            waitCall();
+            assertSame(cancelled, this.cancelled);
+        }
+
         private void waitCall() {
             while (!called) {
                 synchronized (lock) {
@@ -441,6 +474,24 @@ class ApiAsyncClientTest {
         @Override
         public void stream(T result) {
             results.add(result);
+        }
+
+        @Override
+        public void completed(Void result) {
+            StreamFutureCallback.super.completed(result);
+            super.completed(result);
+        }
+
+        @Override
+        public void failed(Exception ex) {
+            StreamFutureCallback.super.failed(ex);
+            super.failed(ex);
+        }
+
+        @Override
+        public void cancelled() {
+            StreamFutureCallback.super.cancelled();
+            super.cancelled();
         }
     }
 }

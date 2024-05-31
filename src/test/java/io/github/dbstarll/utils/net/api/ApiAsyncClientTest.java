@@ -14,12 +14,7 @@ import org.apache.hc.client5.http.entity.EntityBuilder;
 import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.impl.classic.AbstractHttpClientResponseHandler;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.http.ParseException;
+import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.entity.EntityUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.ThrowingConsumer;
@@ -34,12 +29,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * test ApiAsyncClient
@@ -266,7 +256,7 @@ class ApiAsyncClientTest {
     @Test
     void stream() throws Throwable {
         useClient((server, client) -> {
-            final ClassicHttpRequest request = client.get("https://httpbin.y1cloud.com/stream/3").build();
+            final ClassicHttpRequest request = client.get("https://httpbin.org/stream/3").build();
             final MyStreamFutureCallback<String> callback = new MyStreamFutureCallback<>();
             final Future<Void> future = client.execute(request, String.class, callback);
             assertNull(future.get());

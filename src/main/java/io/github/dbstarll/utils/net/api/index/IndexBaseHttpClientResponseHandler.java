@@ -11,22 +11,19 @@ import static org.apache.commons.lang3.Validate.notNull;
 
 public abstract class IndexBaseHttpClientResponseHandler<S, D, I extends Index<D>>
         implements HttpClientResponseHandler<I> {
-    private final Class<S> sourceClass;
     private final HttpClientResponseHandler<S> sourceResponseHandler;
 
-    protected IndexBaseHttpClientResponseHandler(final Class<S> sourceClass,
-                                                 final HttpClientResponseHandler<S> sourceResponseHandler) {
-        this.sourceClass = notNull(sourceClass, "sourceClass is null");
+    protected IndexBaseHttpClientResponseHandler(final HttpClientResponseHandler<S> sourceResponseHandler) {
         this.sourceResponseHandler = notNull(sourceResponseHandler, "sourceResponseHandler is null");
     }
 
     @Override
     public final I handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
         final ContentType contentType = parseContentType(response);
-        if (supports(contentType, sourceClass)) {
+        if (supports(contentType)) {
             return handleContent(contentType, parseContent(response), parseEndOfStream(response));
         } else {
-            throw new UnsupportedContentTypeException(contentType, sourceClass);
+            throw new UnsupportedContentTypeException(contentType, getClass());
         }
     }
 
@@ -46,7 +43,7 @@ public abstract class IndexBaseHttpClientResponseHandler<S, D, I extends Index<D
         return Boolean.parseBoolean(notNull(header, "header:endOfStream is null").getValue());
     }
 
-    protected abstract boolean supports(ContentType contentType, Class<S> contentClass);
+    protected abstract boolean supports(ContentType contentType);
 
     protected abstract I handleContent(ContentType contentType, S content, boolean endOfStream)
             throws HttpException, IOException;

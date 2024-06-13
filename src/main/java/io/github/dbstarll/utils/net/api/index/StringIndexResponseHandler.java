@@ -11,11 +11,11 @@ public final class StringIndexResponseHandler extends IndexBaseHttpClientRespons
      * @param stringResponseHandler ResponseHandler for String
      */
     public StringIndexResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
-        super(String.class, stringResponseHandler);
+        super(stringResponseHandler);
     }
 
     @Override
-    protected boolean supports(final ContentType contentType, final Class<String> contentClass) {
+    protected boolean supports(final ContentType contentType) {
         return true;
     }
 

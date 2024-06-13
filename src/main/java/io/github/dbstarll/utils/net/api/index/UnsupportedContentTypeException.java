@@ -7,18 +7,18 @@ public final class UnsupportedContentTypeException extends ProtocolException {
     private static final long serialVersionUID = 134343442150902042L;
 
     private final ContentType contentType;
-    private final Class<?> contentClass;
+    private final Class<?> responseHandlerClass;
 
     /**
      * 构造UnsupportedContentTypeException.
      *
-     * @param contentType  type of Content
-     * @param contentClass class of Content
+     * @param contentType          type of Content
+     * @param responseHandlerClass class of ResponseHandler
      */
-    public UnsupportedContentTypeException(final ContentType contentType, final Class<?> contentClass) {
-        super(String.format("Unsupported Content-Type: %s for %s", contentType, contentClass));
+    public UnsupportedContentTypeException(final ContentType contentType, final Class<?> responseHandlerClass) {
+        super(String.format("Unsupported Content-Type: %s for %s", contentType, responseHandlerClass));
         this.contentType = contentType;
-        this.contentClass = contentClass;
+        this.responseHandlerClass = responseHandlerClass;
     }
 
     /**
@@ -31,11 +31,11 @@ public final class UnsupportedContentTypeException extends ProtocolException {
     }
 
     /**
-     * 获得class of Content.
+     * 获得class of ResponseHandler.
      *
-     * @return class of Content
+     * @return class of ResponseHandler
      */
-    public Class<?> getContentClass() {
-        return contentClass;
+    public Class<?> getResponseHandlerClass() {
+        return responseHandlerClass;
     }
 }

@@ -23,11 +23,11 @@ public final class EventStreamIndexResponseHandler extends
      * @param stringResponseHandler ResponseHandler for String
      */
     public EventStreamIndexResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
-        super(String.class, stringResponseHandler);
+        super(stringResponseHandler);
     }
 
     @Override
-    protected boolean supports(final ContentType contentType, final Class<String> contentClass) {
+    protected boolean supports(final ContentType contentType) {
         return ContentType.TEXT_EVENT_STREAM.isSameMimeType(contentType);
     }
 

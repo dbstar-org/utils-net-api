@@ -1,13 +1,15 @@
 package io.github.dbstarll.utils.net.api.index;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 
-public final class EventStreamIndexResponseHandler extends IndexBaseHttpClientResponseHandler<EventStreamIndex> {
+public final class EventStreamIndexResponseHandler extends
+        IndexBaseHttpClientResponseHandler<String, EventStream, EventStreamIndex> {
     private static final Logger LOGGER = LoggerFactory.getLogger(EventStreamIndexResponseHandler.class);
 
     private static final String FIELD_EVENT = "event";
@@ -21,11 +23,17 @@ public final class EventStreamIndexResponseHandler extends IndexBaseHttpClientRe
      * @param stringResponseHandler ResponseHandler for String
      */
     public EventStreamIndexResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
-        super(stringResponseHandler);
+        super(String.class, stringResponseHandler);
     }
 
     @Override
-    protected EventStreamIndex handleContent(final String content, final boolean endOfStream) {
+    protected boolean supports(final ContentType contentType, final Class<String> contentClass) {
+        return ContentType.TEXT_EVENT_STREAM.isSameMimeType(contentType);
+    }
+
+    @Override
+    protected EventStreamIndex handleContent(final ContentType contentType, final String content,
+                                             final boolean endOfStream) {
         final int index = StringUtils.indexOf(content, "\n\n");
         if (index >= 0) {
             return new EventStreamIndex(parseEventStream(content.substring(0, index)), index + 2);

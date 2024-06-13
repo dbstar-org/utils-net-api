@@ -1,29 +1,53 @@
 package io.github.dbstarll.utils.net.api.index;
 
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpException;
+import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.nio.entity.AbstractCharDataConsumer;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static org.apache.commons.lang3.Validate.notNull;
 
-public abstract class IndexBaseHttpClientResponseHandler<I extends Index<?>>
+public abstract class IndexBaseHttpClientResponseHandler<S, D, I extends Index<D>>
         implements HttpClientResponseHandler<I> {
-    private final HttpClientResponseHandler<String> stringResponseHandler;
+    private final Class<S> sourceClass;
+    private final HttpClientResponseHandler<S> sourceResponseHandler;
 
-    protected IndexBaseHttpClientResponseHandler(final HttpClientResponseHandler<String> stringResponseHandler) {
-        this.stringResponseHandler = stringResponseHandler;
+    protected IndexBaseHttpClientResponseHandler(final Class<S> sourceClass,
+                                                 final HttpClientResponseHandler<S> sourceResponseHandler) {
+        this.sourceClass = notNull(sourceClass, "sourceClass is null");
+        this.sourceResponseHandler = notNull(sourceResponseHandler, "sourceResponseHandler is null");
     }
 
     @Override
     public final I handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
-        final String content = stringResponseHandler.handleResponse(response);
-        final Header header = response.getHeader(AbstractCharDataConsumer.class.getName() + "@endOfStream");
-        return handleContent(content, Boolean.parseBoolean(notNull(header, "header:endOfStream is null").getValue()));
+        final ContentType contentType = parseContentType(response);
+        if (supports(contentType, sourceClass)) {
+            return handleContent(contentType, parseContent(response), parseEndOfStream(response));
+        } else {
+            throw new UnsupportedContentTypeException(contentType, sourceClass);
+        }
     }
 
-    protected abstract I handleContent(String content, boolean endOfStream) throws IOException;
+    private ContentType parseContentType(final MessageHeaders headers) {
+        return Optional.ofNullable(headers.getFirstHeader(HttpHeaders.CONTENT_TYPE))
+                .map(NameValuePair::getValue)
+                .map(ContentType::parse)
+                .orElse(null);
+    }
+
+    private S parseContent(final ClassicHttpResponse response) throws HttpException, IOException {
+        return sourceResponseHandler.handleResponse(response);
+    }
+
+    private boolean parseEndOfStream(final MessageHeaders headers) {
+        final Header header = headers.getFirstHeader(AbstractCharDataConsumer.class.getName() + "@endOfStream");
+        return Boolean.parseBoolean(notNull(header, "header:endOfStream is null").getValue());
+    }
+
+    protected abstract boolean supports(ContentType contentType, Class<S> contentClass);
+
+    protected abstract I handleContent(ContentType contentType, S content, boolean endOfStream)
+            throws HttpException, IOException;
 }

@@ -4,6 +4,7 @@ import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
 import io.github.dbstarll.utils.http.client.response.AbstractResponseHandlerFactory;
 import io.github.dbstarll.utils.net.api.index.EventStream;
+import io.github.dbstarll.utils.net.api.index.UnsupportedContentTypeException;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -328,9 +329,15 @@ class ApiAsyncClientTest {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
             final Future<Void> future = client.execute(request, EventStream.class, callback);
-            assertNull(future.get());
-            callback.assertResult(future.get());
-            assertEquals(0, callback.results.size());
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, future::get);
+            assertEquals(IOException.class, e.getCause().getClass());
+            assertNotNull(e.getCause().getCause());
+            assertEquals(UnsupportedContentTypeException.class, e.getCause().getCause().getClass());
+            final UnsupportedContentTypeException e2 = (UnsupportedContentTypeException) e.getCause().getCause();
+            assertEquals("Unsupported Content-Type: text/plain; charset=UTF-8 for class java.lang.String", e2.getMessage());
+            assertEquals("text/plain; charset=UTF-8", e2.getContentType().toString());
+            assertEquals(String.class, e2.getContentClass());
+            callback.assertException(e.getCause());
 
             final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
@@ -338,7 +345,9 @@ class ApiAsyncClientTest {
             callback2.assertResult(future2.get());
             assertEquals(1, callback2.results.size());
             assertEquals("EventStream[event='test', data='abc\ndef', id='id', retry='5000']", callback2.results.get(0).toString());
-        }, s -> s.enqueue(new MockResponse().setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
+        }, s -> s.enqueue(new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_EVENT_STREAM)
+                .setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
     }
 
     @Test
@@ -347,9 +356,12 @@ class ApiAsyncClientTest {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
             final Future<Void> future = client.execute(request, EventStream.class, callback);
-            assertNull(future.get());
-            callback.assertResult(future.get());
-            assertEquals(0, callback.results.size());
+            final ExecutionException e = assertThrowsExactly(ExecutionException.class, future::get);
+            assertEquals(IOException.class, e.getCause().getClass());
+            assertNotNull(e.getCause().getCause());
+            assertEquals(UnsupportedContentTypeException.class, e.getCause().getCause().getClass());
+            assertEquals("Unsupported Content-Type: text/plain; charset=UTF-8 for class java.lang.String", e.getCause().getCause().getMessage());
+            callback.assertException(e.getCause());
 
             final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
@@ -357,7 +369,9 @@ class ApiAsyncClientTest {
             callback2.assertResult(future2.get());
             assertEquals(1, callback2.results.size());
             assertEquals("EventStream[event='中文', data='中文', id='中文', retry='null']", callback2.results.get(0).toString());
-        }, s -> s.enqueue(new MockResponse().setBody("id: 中文\nevent: 中文\ndata: 中文")));
+        }, s -> s.enqueue(new MockResponse()
+                .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_EVENT_STREAM)
+                .setBody("id: 中文\nevent: 中文\ndata: 中文")));
     }
 
     private static class MyClient extends ApiAsyncClient {

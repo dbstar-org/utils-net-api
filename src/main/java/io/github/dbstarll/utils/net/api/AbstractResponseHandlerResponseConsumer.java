@@ -1,12 +1,7 @@
 package io.github.dbstarll.utils.net.api;
 
 import org.apache.hc.client5.http.async.methods.AbstractCharResponseConsumer;
-import org.apache.hc.core5.http.ClassicHttpResponse;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.Header;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpHeaders;
-import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.io.support.ClassicResponseBuilder;
 import org.apache.hc.core5.http.nio.entity.AbstractCharDataConsumer;
@@ -16,8 +11,8 @@ import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractResponseHandlerResponseConsumer<H, T> extends AbstractCharResponseConsumer<T> {
-    private final AtomicReference<HttpResponse> refHttpResponse = new AtomicReference<>();
-    private final AtomicReference<ContentType> refContentType = new AtomicReference<>();
+    protected final AtomicReference<HttpResponse> refHttpResponse = new AtomicReference<>();
+    protected final AtomicReference<ContentType> refContentType = new AtomicReference<>();
 
     private final HttpClientResponseHandler<H> responseHandler;
     private final Charset charset;

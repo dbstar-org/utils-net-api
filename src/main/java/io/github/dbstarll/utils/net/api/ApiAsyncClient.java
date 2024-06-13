@@ -5,12 +5,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.hc.client5.http.async.HttpAsyncClient;
 import org.apache.hc.core5.concurrent.CallbackContribution;
 import org.apache.hc.core5.concurrent.FutureCallback;
-import org.apache.hc.core5.http.ClassicHttpRequest;
-import org.apache.hc.core5.http.ContentType;
-import org.apache.hc.core5.http.EntityDetails;
-import org.apache.hc.core5.http.HttpEntity;
-import org.apache.hc.core5.http.HttpException;
-import org.apache.hc.core5.http.HttpResponse;
+import org.apache.hc.core5.http.*;
 import org.apache.hc.core5.http.io.HttpClientResponseHandler;
 import org.apache.hc.core5.http.nio.AsyncRequestProducer;
 import org.apache.hc.core5.http.nio.AsyncResponseConsumer;
@@ -74,28 +69,32 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
      * Triggered to pass incoming data to the data consumer.
      *
      * @param request       the request
+     * @param response      the response message head.
      * @param entityDetails the response entity details or {@code null} if the response
      *                      does not enclose an entity.
      * @param src           data source.
-     * @throws IOException IOException
      */
-    @SuppressWarnings("RedundantThrows")
-    protected void consume(final ClassicHttpRequest request, final EntityDetails entityDetails, final ByteBuffer src)
-            throws IOException {
-        logger.trace("consume: [{}]@{} with [{}]:{} bytes", request, request.hashCode(), entityDetails.getContentType(),
-                src.remaining());
+    protected void consume(final ClassicHttpRequest request, final HttpResponse response,
+                           final EntityDetails entityDetails, final ByteBuffer src) {
+        logger.trace("consume: [{}]@{} with {}:[{}]:{} bytes", request, request.hashCode(), response.getCode(),
+                entityDetails.getContentType(), src.remaining());
     }
 
     /**
      * Triggered to pass incoming data packet to the data consumer.
      *
-     * @param request the request
-     * @param result  the data packet.
-     * @param <T>     type of result
+     * @param request     the request
+     * @param response    HttpResponse
+     * @param contentType ContentType
+     * @param endOfStream 数据流是否结束
+     * @param result      the data packet.
+     * @param <T>         type of result
      * @return result
      */
-    protected <T> T stream(final ClassicHttpRequest request, final T result) {
-        logger.trace("stream: [{}]@{} with {}:[{}]", request, request.hashCode(), result.getClass().getName(), result);
+    protected <T> T stream(final ClassicHttpRequest request, final HttpResponse response, final ContentType contentType,
+                           final boolean endOfStream, final T result) {
+        logger.trace("stream: [{}]@{} with {}:[{}]:{}:[{}]{}", request, request.hashCode(), response.getCode(),
+                contentType, result.getClass().getName(), result, endOfStream ? "END" : "");
         return result;
     }
 
@@ -125,12 +124,14 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         traceRequest(request);
 
         return httpClient.execute(buildRequestProducer(request), new AsyncResponseConsumerWrapper<T>(responseConsumer) {
+            private final AtomicReference<HttpResponse> refHttpResponse = new AtomicReference<>();
             private final AtomicReference<EntityDetails> refEntityDetails = new AtomicReference<>();
 
             @Override
             public void consumeResponse(final HttpResponse response, final EntityDetails entityDetails,
                                         final HttpContext context, final FutureCallback<T> resultCallback)
                     throws HttpException, IOException {
+                this.refHttpResponse.set(response);
                 this.refEntityDetails.set(entityDetails);
                 ApiAsyncClient.this.consumeResponse(request, response, entityDetails);
                 super.consumeResponse(response, entityDetails, context, resultCallback);
@@ -140,7 +141,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
             public void consume(final ByteBuffer src) throws IOException {
                 final int position = src.position();
                 try {
-                    ApiAsyncClient.this.consume(request, refEntityDetails.get(), src);
+                    ApiAsyncClient.this.consume(request, refHttpResponse.get(), refEntityDetails.get(), src);
                 } finally {
                     src.position(position);
                 }
@@ -149,6 +150,7 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
 
             @Override
             public void releaseResources() {
+                this.refHttpResponse.set(null);
                 this.refEntityDetails.set(null);
                 super.releaseResources();
             }
@@ -193,7 +195,8 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
         return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, responseCharset,
-                result -> callback.stream(ApiAsyncClient.this.stream(request, result))), callback);
+                (response, contentType, endOfStream, result) -> callback.stream(response, contentType, endOfStream,
+                        ApiAsyncClient.this.stream(request, response, contentType, endOfStream, result))), callback);
     }
 
     /**

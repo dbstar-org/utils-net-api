@@ -27,37 +27,38 @@ public final class EventStreamIndexResponseHandler extends
     }
 
     @Override
-    protected boolean supports(final ContentType contentType) {
-        return ContentType.TEXT_EVENT_STREAM.isSameMimeType(contentType);
-    }
-
-    @Override
     protected EventStreamIndex handleContent(final ContentType contentType, final String content,
                                              final boolean endOfStream) {
         final int index = StringUtils.indexOf(content, "\n\n");
         if (index >= 0) {
-            return new EventStreamIndex(parseEventStream(content.substring(0, index)), index + 2);
+            return new EventStreamIndex(parseEventStream(contentType, content.substring(0, index)), index + 2);
         } else if (endOfStream) {
-            return new EventStreamIndex(parseEventStream(content), index);
+            return new EventStreamIndex(parseEventStream(contentType, content), index);
         } else {
             return null;
         }
     }
 
-    private EventStream parseEventStream(final String content) {
+    private EventStream parseEventStream(final ContentType contentType, final String content) {
         if (StringUtils.isBlank(content)) {
             return null;
         }
 
         final EventStream eventStream = new EventStream();
-        final long setAny = Arrays.stream(StringUtils.split(content, '\n')).map(split -> {
-            final int idxField = split.indexOf(':');
-            if (idxField < 0) {
-                return setField(eventStream, split, "");
-            } else {
-                return setField(eventStream, split.substring(0, idxField), split.substring(idxField + 1).trim());
-            }
-        }).filter(b -> b).count();
+        final long setAny;
+        if (ContentType.TEXT_EVENT_STREAM.isSameMimeType(contentType)) {
+            setAny = Arrays.stream(StringUtils.split(content, '\n')).map(split -> {
+                final int idxField = split.indexOf(':');
+                if (idxField < 0) {
+                    return setField(eventStream, split, "");
+                } else {
+                    return setField(eventStream, split.substring(0, idxField), split.substring(idxField + 1).trim());
+                }
+            }).filter(b -> b).count();
+        } else {
+            eventStream.setData(content);
+            setAny = 1;
+        }
         return setAny > 0 ? eventStream : null;
     }
 

@@ -15,11 +15,6 @@ public final class StringIndexResponseHandler extends IndexBaseHttpClientRespons
     }
 
     @Override
-    protected boolean supports(final ContentType contentType) {
-        return true;
-    }
-
-    @Override
     protected StringIndex handleContent(final ContentType contentType, final String content, final boolean endOfStream) {
         final int index = StringUtils.indexOf(content, '\n');
         if (index >= 0) {

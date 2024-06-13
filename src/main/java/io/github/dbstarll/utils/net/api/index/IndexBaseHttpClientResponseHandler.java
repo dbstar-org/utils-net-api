@@ -19,12 +19,7 @@ public abstract class IndexBaseHttpClientResponseHandler<S, D, I extends Index<D
 
     @Override
     public final I handleResponse(final ClassicHttpResponse response) throws HttpException, IOException {
-        final ContentType contentType = parseContentType(response);
-        if (supports(contentType)) {
-            return handleContent(contentType, parseContent(response), parseEndOfStream(response));
-        } else {
-            throw new UnsupportedContentTypeException(contentType, getClass());
-        }
+        return handleContent(parseContentType(response), parseContent(response), parseEndOfStream(response));
     }
 
     private ContentType parseContentType(final MessageHeaders headers) {
@@ -42,8 +37,6 @@ public abstract class IndexBaseHttpClientResponseHandler<S, D, I extends Index<D
         final Header header = headers.getFirstHeader(AbstractCharDataConsumer.class.getName() + "@endOfStream");
         return Boolean.parseBoolean(notNull(header, "header:endOfStream is null").getValue());
     }
-
-    protected abstract boolean supports(ContentType contentType);
 
     protected abstract I handleContent(ContentType contentType, S content, boolean endOfStream)
             throws HttpException, IOException;

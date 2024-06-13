@@ -4,8 +4,6 @@ import io.github.dbstarll.utils.http.client.HttpClientFactory;
 import io.github.dbstarll.utils.http.client.request.RelativeUriResolver;
 import io.github.dbstarll.utils.http.client.response.AbstractResponseHandlerFactory;
 import io.github.dbstarll.utils.net.api.index.EventStream;
-import io.github.dbstarll.utils.net.api.index.EventStreamIndexResponseHandler;
-import io.github.dbstarll.utils.net.api.index.UnsupportedContentTypeException;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -330,14 +328,10 @@ class ApiAsyncClientTest {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
             final Future<Void> future = client.execute(request, EventStream.class, callback);
-            final ExecutionException e = assertThrowsExactly(ExecutionException.class, future::get);
-            assertEquals(IOException.class, e.getCause().getClass());
-            assertNotNull(e.getCause().getCause());
-            assertEquals(UnsupportedContentTypeException.class, e.getCause().getCause().getClass());
-            final UnsupportedContentTypeException e2 = (UnsupportedContentTypeException) e.getCause().getCause();
-            assertEquals("text/plain; charset=UTF-8", e2.getContentType().toString());
-            assertEquals(EventStreamIndexResponseHandler.class, e2.getResponseHandlerClass());
-            callback.assertException(e.getCause());
+            assertNull(future.get());
+            callback.assertResult(future.get());
+            assertEquals(1, callback.results.size());
+            assertEquals("好", callback.results.get(0).getData());
 
             final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
@@ -356,13 +350,10 @@ class ApiAsyncClientTest {
             final ClassicHttpRequest request = client.get("/ping.html").build();
             final MyStreamFutureCallback<EventStream> callback = new MyStreamFutureCallback<>();
             final Future<Void> future = client.execute(request, EventStream.class, callback);
-            final ExecutionException e = assertThrowsExactly(ExecutionException.class, future::get);
-            assertEquals(IOException.class, e.getCause().getClass());
-            assertNotNull(e.getCause().getCause());
-            final UnsupportedContentTypeException e2 = (UnsupportedContentTypeException) e.getCause().getCause();
-            assertEquals("text/plain; charset=UTF-8", e2.getContentType().toString());
-            assertEquals(EventStreamIndexResponseHandler.class, e2.getResponseHandlerClass());
-            callback.assertException(e.getCause());
+            assertNull(future.get());
+            callback.assertResult(future.get());
+            assertEquals(1, callback.results.size());
+            assertEquals("好", callback.results.get(0).getData());
 
             final MyStreamFutureCallback<EventStream> callback2 = new MyStreamFutureCallback<>();
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);

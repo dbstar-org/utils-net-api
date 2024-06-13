@@ -478,7 +478,7 @@ class ApiAsyncClientTest {
         private final List<T> results = new ArrayList<>();
 
         @Override
-        public void stream(HttpResponse response, ContentType contentType, boolean endOfStream, T result) {
+        public void stream(ContentType contentType, boolean endOfStream, T result) {
             results.add(result);
         }
 

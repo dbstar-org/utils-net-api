@@ -44,7 +44,7 @@ final class StreamResponseHandlerResponseConsumer<T, I extends Index<T>> extends
                 builder.delete(0, index > 0 ? index : builder.length());
                 final T data = result.getData();
                 if (data != null) {
-                    callback.stream(refHttpResponse.get(), refContentType.get(), endOfStream, result.getData());
+                    callback.stream(refContentType.get(), endOfStream, result.getData());
                 }
             }
         }

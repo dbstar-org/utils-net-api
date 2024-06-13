@@ -84,17 +84,16 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
      * Triggered to pass incoming data packet to the data consumer.
      *
      * @param request     the request
-     * @param response    HttpResponse
      * @param contentType ContentType
      * @param endOfStream 数据流是否结束
      * @param result      the data packet.
      * @param <T>         type of result
      * @return result
      */
-    protected <T> T stream(final ClassicHttpRequest request, final HttpResponse response, final ContentType contentType,
-                           final boolean endOfStream, final T result) {
-        logger.trace("stream: [{}]@{} with {}:[{}]:{}:[{}]{}", request, request.hashCode(), response.getCode(),
-                contentType, result.getClass().getName(), result, endOfStream ? "END" : "");
+    protected <T> T stream(final ClassicHttpRequest request, final ContentType contentType, final boolean endOfStream,
+                           final T result) {
+        logger.trace("stream: [{}]@{} with [{}]:{}:[{}]{}", request, request.hashCode(), contentType,
+                result.getClass().getName(), result, endOfStream ? "END" : "");
         return result;
     }
 
@@ -195,8 +194,8 @@ public abstract class ApiAsyncClient extends AbstractApiClient<HttpAsyncClient> 
         notNull(responseHandler, "responseHandler is null");
         notNull(callback, "callback is null");
         return execute(request, StreamResponseHandlerResponseConsumer.create(responseHandler, responseCharset,
-                (response, contentType, endOfStream, result) -> callback.stream(response, contentType, endOfStream,
-                        ApiAsyncClient.this.stream(request, response, contentType, endOfStream, result))), callback);
+                (contentType, endOfStream, result) -> callback.stream(contentType, endOfStream,
+                        ApiAsyncClient.this.stream(request, contentType, endOfStream, result))), callback);
     }
 
     /**

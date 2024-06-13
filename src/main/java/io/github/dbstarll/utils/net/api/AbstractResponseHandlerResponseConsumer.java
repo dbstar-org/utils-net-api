@@ -11,7 +11,7 @@ import java.nio.charset.Charset;
 import java.util.concurrent.atomic.AtomicReference;
 
 public abstract class AbstractResponseHandlerResponseConsumer<H, T> extends AbstractCharResponseConsumer<T> {
-    protected final AtomicReference<HttpResponse> refHttpResponse = new AtomicReference<>();
+    private final AtomicReference<HttpResponse> refHttpResponse = new AtomicReference<>();
     protected final AtomicReference<ContentType> refContentType = new AtomicReference<>();
 
     private final HttpClientResponseHandler<H> responseHandler;

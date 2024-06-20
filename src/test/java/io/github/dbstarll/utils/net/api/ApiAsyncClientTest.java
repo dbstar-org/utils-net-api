@@ -337,11 +337,12 @@ class ApiAsyncClientTest {
             final Future<Void> future2 = client.execute(request, EventStream.class, callback2);
             assertNull(future2.get());
             callback2.assertResult(future2.get());
-            assertEquals(1, callback2.results.size());
+            assertEquals(2, callback2.results.size());
             assertEquals("EventStream[event='test', data='abc\ndef', id='id', retry='5000']", callback2.results.get(0).toString());
+            assertEquals("EventStream[event='null', data='a\nb', id='null', retry='null']", callback2.results.get(1).toString());
         }, s -> s.enqueue(new MockResponse()
                 .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_EVENT_STREAM)
-                .setBody("id: id\nevent: test\ndata: abc\ndata: def\nretry: 5000\n\nretry: abc\n\n   ")));
+                .setBody("id:id\nevent:test\ndata:abc\ndata:def\nretry:5000\n\nretry:abc\n\ndata:a\nb\n\n  :  ")));
     }
 
     @Test
@@ -363,7 +364,7 @@ class ApiAsyncClientTest {
             assertEquals("EventStream[event='中文', data='中文', id='中文', retry='null']", callback2.results.get(0).toString());
         }, s -> s.enqueue(new MockResponse()
                 .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_EVENT_STREAM)
-                .setBody("id: 中文\nevent: 中文\ndata: 中文")));
+                .setBody("id:中文\nevent:中文\ndata:中文")));
     }
 
     private static class MyClient extends ApiAsyncClient {

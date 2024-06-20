@@ -50,9 +50,9 @@ public final class EventStreamIndexResponseHandler extends
             setAny = Arrays.stream(StringUtils.split(content, '\n')).map(split -> {
                 final int idxField = split.indexOf(':');
                 if (idxField < 0) {
-                    return setField(eventStream, split, "");
+                    return setField(eventStream, split, null);
                 } else {
-                    return setField(eventStream, split.substring(0, idxField), split.substring(idxField + 1).trim());
+                    return setField(eventStream, split.substring(0, idxField), split.substring(idxField + 1));
                 }
             }).filter(b -> b).count();
         } else {
@@ -82,8 +82,13 @@ public final class EventStreamIndexResponseHandler extends
                     return false;
                 }
             default:
-                LOGGER.warn("unknown field: {}=[{}]", field, value);
-                return false;
+                if (value == null) {
+                    eventStream.setData(field);
+                    return true;
+                } else {
+                    LOGGER.warn("unknown field: {}=[{}]", field, value);
+                    return false;
+                }
         }
     }
 }

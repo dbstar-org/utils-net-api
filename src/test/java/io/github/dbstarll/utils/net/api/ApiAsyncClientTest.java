@@ -342,7 +342,7 @@ class ApiAsyncClientTest {
             assertEquals("EventStream[event='null', data='a\nb', id='null', retry='null']", callback2.results.get(1).toString());
         }, s -> s.enqueue(new MockResponse()
                 .setHeader(HttpHeaders.CONTENT_TYPE, ContentType.TEXT_EVENT_STREAM)
-                .setBody("id:id\nevent:test\ndata:abc\ndata:def\nretry:5000\n\nretry:abc\n\ndata:a\nb\n\n  :  ")));
+                .setBody("id:id\nevent:test\ndata:abc\ndata:def\nretry:5000\n\nretry:abc\n\ndata:a\nb\n\n  :  \n\n  ")));
     }
 
     @Test
